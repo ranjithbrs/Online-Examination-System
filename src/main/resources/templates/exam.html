@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Examination - Proctored Session</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- Fullscreen Entry Modal -->
+<div id="startModal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 style="font-size: 1.75rem; margin-bottom: 1rem; color: var(--text-primary);">Begin Proctored Examination</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+            Candidate: <strong th:text="${studentName}" style="color: var(--accent-primary);">John Doe</strong> (<span th:text="${rollNumber}">REG-1234</span>)<br>
+            Please click below to initialize full-screen mode and start your timed examination.
+        </p>
+        <button onclick="initializeExamSession()" class="btn btn-primary btn-block" style="padding: 1rem;">
+            Launch Full-Screen & Start Exam &rarr;
+        </button>
+    </div>
+</div>
+
+<!-- Navbar Header -->
+<nav class="navbar">
+    <a href="#" class="brand">
+        <div class="brand-icon">E</div>
+        <span>SecureExam Session</span>
+    </a>
+
+    <div style="display: flex; gap: 2rem; align-items: center;">
+        <div style="text-align: right;">
+            <div style="font-weight: 600; font-size: 0.95rem;" th:text="${studentName}">Student Name</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);" th:text="${rollNumber}">Roll No</div>
+        </div>
+
+        <div id="timer" class="timer-badge">
+            <span style="font-size: 1rem; color: var(--text-muted);">TIME</span>
+            <span id="timeDisplay">10:00</span>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <form id="examForm" action="/submit" method="post" onsubmit="beforeSubmitExam()">
+        <!-- Candidate Metadata -->
+        <input type="hidden" name="studentName" th:value="${studentName}">
+        <input type="hidden" name="studentEmail" th:value="${studentEmail}">
+        <input type="hidden" name="rollNumber" th:value="${rollNumber}">
+
+        <!-- Hidden Proctoring Counters -->
+        <input type="hidden" name="tabSwitch" id="tabSwitchField" value="0">
+        <input type="hidden" name="copyCount" id="copyField" value="0">
+        <input type="hidden" name="rightClick" id="rightClickField" value="0">
+        <input type="hidden" name="fullscreenExit" id="fullscreenField" value="0">
+        <input type="hidden" name="windowBlur" id="blurField" value="0">
+
+        <div class="exam-layout">
+            <!-- Left Main Content: Questions -->
+            <div>
+                <div th:each="q, iterStat : ${questions}" class="question-card" th:id="'qcard-' + ${q.id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span class="badge badge-warning" th:text="${q.category}">Category</span>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);" th:text="${q.marks} + ' Mark(s)'">1 Mark</span>
+                    </div>
+
+                    <h3 class="question-title" th:text="${iterStat.count} + '. ' + ${q.questionText}">
+                        1. What is Java?
+                    </h3>
+
+                    <div class="options-list">
+                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
+                            <input type="radio" th:name="'q_' + ${q.id}" value="A" onchange="updatePalette('[[${q.id}]]')">
+                            <span class="option-label" th:text="'A) ' + ${q.optionA}">Option A</span>
+                        </label>
+
+                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
+                            <input type="radio" th:name="'q_' + ${q.id}" value="B" onchange="updatePalette('[[${q.id}]]')">
+                            <span class="option-label" th:text="'B) ' + ${q.optionB}">Option B</span>
+                        </label>
+
+                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
+                            <input type="radio" th:name="'q_' + ${q.id}" value="C" onchange="updatePalette('[[${q.id}]]')">
+                            <span class="option-label" th:text="'C) ' + ${q.optionC}">Option C</span>
+                        </label>
+
+                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
+                            <input type="radio" th:name="'q_' + ${q.id}" value="D" onchange="updatePalette('[[${q.id}]]')">
+                            <span class="option-label" th:text="'D) ' + ${q.optionD}">Option D</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top: 1rem; text-align: right;">
+                        <button type="button" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" th:onclick="'clearAnswer(' + ${q.id} + ')'">
+                            Clear Selection
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar: Palette & Proctoring Status -->
+            <div>
+                <!-- Proctoring Live Monitoring Box -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Proctoring Status</span>
+                        <span id="liveStatusBadge" class="badge badge-success">ACTIVE</span>
+                    </h4>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        Real-time AI behavioral monitor is active.
+                    </p>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.35rem;">
+                        <div>Tab Switches: <strong id="liveTabCount" style="color: var(--text-primary);">0</strong></div>
+                        <div>Copy Attempts: <strong id="liveCopyCount" style="color: var(--text-primary);">0</strong></div>
+                        <div>Right Clicks: <strong id="liveRightClickCount" style="color: var(--text-primary);">0</strong></div>
+                        <div>Fullscreen Exits: <strong id="liveFullscreenCount" style="color: var(--text-primary);">0</strong></div>
+                    </div>
+                </div>
+
+                <!-- Question Palette -->
+                <div class="card">
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;">
+                        Question Palette
+                    </h4>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Click number to jump to question.
+                    </p>
+
+                    <div class="palette-grid">
+                        <button type="button" th:each="q, iterStat : ${questions}" 
+                                class="palette-btn" 
+                                th:id="'pbtn-' + ${q.id}"
+                                th:onclick="'scrollToQuestion(' + ${q.id} + ')'"
+                                th:text="${iterStat.count}">
+                            1
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary btn-block" style="padding: 1rem;">
+                            Submit Examination
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Violation Toast Overlay Container -->
+<div id="toastContainer"></div>
+
+<script th:inline="javascript">
+let tabSwitchCount = 0;
+let copyCount = 0;
+let rightClickCount = 0;
+let fullscreenExitCount = 0;
+let windowBlurCount = 0;
+
+let durationSeconds = 600; // 10 minutes default
+let timerInterval = null;
+let examSubmitted = false;
+
+function initializeExamSession() {
+    document.getElementById("startModal").style.display = "none";
+    
+    // Request Fullscreen
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+
+    startTimer();
+}
+
+function startTimer() {
+    const timeDisplay = document.getElementById("timeDisplay");
+    const timerBox = document.getElementById("timer");
+
+    timerInterval = setInterval(() => {
+        if (durationSeconds <= 0) {
+            clearInterval(timerInterval);
+            timeDisplay.innerText = "00:00";
+            showToast("Time expired! Automatically submitting your exam...");
+            setTimeout(() => {
+                document.getElementById("examForm").submit();
+            }, 1500);
+            return;
+        }
+
+        durationSeconds--;
+        const mins = Math.floor(durationSeconds / 60);
+        const secs = durationSeconds % 60;
+        timeDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        if (durationSeconds <= 60) {
+            timerBox.classList.add("warning");
+        }
+    }, 1000);
+}
+
+// Proctoring Monitoring Event Listeners
+document.addEventListener("visibilitychange", function() {
+    if (document.hidden && !examSubmitted) {
+        tabSwitchCount++;
+        document.getElementById("liveTabCount").innerText = tabSwitchCount;
+        showToast("⚠️ Warning: Tab switch / Window hidden detected!");
+    }
+});
+
+window.addEventListener("blur", function() {
+    if (!examSubmitted) {
+        windowBlurCount++;
+        showToast("⚠️ Warning: Focus lost from exam window!");
+    }
+});
+
+document.addEventListener("contextmenu", function(e) {
+    e.preventDefault();
+    if (!examSubmitted) {
+        rightClickCount++;
+        document.getElementById("liveRightClickCount").innerText = rightClickCount;
+        showToast("⚠️ Warning: Context menu (Right Click) is disabled!");
+    }
+});
+
+document.addEventListener("keydown", function(e) {
+    if (examSubmitted) return;
+    
+    // Block Copy / Cut / Paste / DevTools shortcuts
+    if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C" || e.key === "v" || e.key === "V" || e.key === "x" || e.key === "X" || e.key === "u" || e.key === "U")) {
+        e.preventDefault();
+        copyCount++;
+        document.getElementById("liveCopyCount").innerText = copyCount;
+        showToast("⚠️ Warning: Copy / Paste / Source inspection is prohibited!");
+    }
+    
+    if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C"))) {
+        e.preventDefault();
+        copyCount++;
+        document.getElementById("liveCopyCount").innerText = copyCount;
+        showToast("⚠️ Warning: Developer tools shortcut blocked!");
+    }
+});
+
+document.addEventListener("fullscreenchange", function() {
+    if (!document.fullscreenElement && !examSubmitted) {
+        fullscreenExitCount++;
+        document.getElementById("liveFullscreenCount").innerText = fullscreenExitCount;
+        showToast("🚨 Alert: You exited Fullscreen mode! Please remain in full screen.");
+        setTimeout(() => {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        }, 2000);
+    }
+});
+
+function showToast(message) {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = "proctor-toast";
+    toast.innerHTML = `<span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 4000);
+}
+
+function updatePalette(qId) {
+    const paletteBtn = document.getElementById(`pbtn-${qId}`);
+    if (paletteBtn) {
+        paletteBtn.classList.add("answered");
+    }
+}
+
+function clearAnswer(qId) {
+    const radios = document.getElementsByName(`q_${qId}`);
+    for (let r of radios) {
+        r.checked = false;
+    }
+    const paletteBtn = document.getElementById(`pbtn-${qId}`);
+    if (paletteBtn) {
+        paletteBtn.classList.remove("answered");
+    }
+}
+
+function scrollToQuestion(qId) {
+    const element = document.getElementById(`qcard-${qId}`);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function beforeSubmitExam() {
+    examSubmitted = true;
+    document.getElementById("tabSwitchField").value = tabSwitchCount;
+    document.getElementById("copyField").value = copyCount;
+    document.getElementById("rightClickField").value = rightClickCount;
+    document.getElementById("fullscreenField").value = fullscreenExitCount;
+    document.getElementById("blurField").value = windowBlurCount;
+}
+</script>
+
+</body>
+</html>

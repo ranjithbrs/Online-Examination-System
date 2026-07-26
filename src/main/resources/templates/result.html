@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Results & Proctoring Audit Report</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="brand">
+        <div class="brand-icon">E</div>
+        <span>SecureExam Portal</span>
+    </a>
+    <div class="nav-links">
+        <a href="/" class="nav-link">New Exam</a>
+        <a href="/history" class="nav-link">Audit Dashboard</a>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Result Hero Summary -->
+    <div class="result-hero">
+        <div style="display: inline-block; margin-bottom: 0.75rem;">
+            <span th:if="${result.passed}" class="badge badge-success" style="font-size: 1rem; padding: 0.5rem 1.25rem;">
+                PASSED EXAMINATION
+            </span>
+            <span th:unless="${result.passed}" class="badge badge-danger" style="font-size: 1rem; padding: 0.5rem 1.25rem;">
+                NEEDS IMPROVEMENT
+            </span>
+        </div>
+
+        <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--text-primary);">
+            Official Assessment & Integrity Report
+        </h1>
+        <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+            Candidate: <strong th:text="${result.studentName}" style="color: var(--text-primary);">John Doe</strong> 
+            | ID: <span th:text="${result.rollNumber}">REG-1234</span>
+            | Date: <span th:text="${#temporals.format(result.submittedAt, 'yyyy-MM-dd HH:mm')}">2026-07-26</span>
+        </p>
+
+        <div class="score-display" th:classappend="${result.passed} ? 'score-passed' : 'score-failed'">
+            <span th:text="${result.score}">5</span> / <span th:text="${result.totalMarks}">6</span>
+        </div>
+        <p style="font-size: 1.25rem; font-weight: 600; color: var(--text-secondary);">
+            Overall Score: <span th:text="${result.percentage}">83.3</span>%
+        </p>
+    </div>
+
+    <!-- Integrity & Proctoring Analytics Dashboard -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Proctoring & Trust Audit Analytics</h2>
+            
+            <span th:if="${result.trustScore >= 85}" class="badge badge-success" style="font-size: 0.95rem;">
+                <span th:text="${result.integrityStatus}">High Integrity</span> (<span th:text="${result.trustScore}">95</span>% Trust)
+            </span>
+            <span th:if="${result.trustScore >= 60 and result.trustScore < 85}" class="badge badge-warning" style="font-size: 0.95rem;">
+                <span th:text="${result.integrityStatus}">Moderate Warning</span> (<span th:text="${result.trustScore}">70</span>% Trust)
+            </span>
+            <span th:if="${result.trustScore < 60}" class="badge badge-danger" style="font-size: 0.95rem;">
+                <span th:text="${result.integrityStatus}">High Risk / Flagged</span> (<span th:text="${result.trustScore}">40</span>% Trust)
+            </span>
+        </div>
+
+        <div class="grid-4" style="margin-bottom: 1.5rem;">
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">Tab Switches</div>
+                <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.tabSwitchCount}">0</div>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">Copy Attempts</div>
+                <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.copyCount}">0</div>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">Right Clicks</div>
+                <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.rightClickCount}">0</div>
+            </div>
+
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">Fullscreen Exits</div>
+                <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.fullscreenExitCount}">0</div>
+            </div>
+        </div>
+
+        <!-- Violation Incident Log Timeline Table -->
+        <h3 style="font-size: 1.1rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem;">
+            Security Incident Log
+        </h3>
+        
+        <div th:if="${#lists.isEmpty(violationLogs)}" style="padding: 1rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-sm); color: var(--color-success); font-size: 0.95rem;">
+            ✓ Clean proctoring log. Zero suspicious security events detected during examination.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(violationLogs)}" class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Violation Type</th>
+                        <th>Incident Details</th>
+                        <th>Logged At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="v : ${violationLogs}">
+                        <td>
+                            <span class="badge badge-danger" th:text="${v.violationType}">TYPE</span>
+                        </td>
+                        <td th:text="${v.description}">Description</td>
+                        <td th:text="${#temporals.format(v.timestamp, 'HH:mm:ss')}">Time</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Academic Question Breakdown -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+            <h2 class="card-title">Academic Question Breakdown & Explanations</h2>
+        </div>
+
+        <div th:each="rev, iter : ${questionReviews}" class="review-item" th:classappend="${rev.correct} ? 'correct' : 'incorrect'">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                <h4 style="font-size: 1.1rem; font-weight: 600;" th:text="${iter.count} + '. ' + ${rev.question.questionText}">
+                    Question text
+                </h4>
+                <span th:if="${rev.correct}" class="badge badge-success">✓ Correct</span>
+                <span th:unless="${rev.correct}" class="badge badge-danger">✗ Incorrect</span>
+            </div>
+
+            <div style="display: flex; gap: 2rem; font-size: 0.95rem; margin-top: 0.5rem;">
+                <div>Submitted Answer: <strong th:text="${rev.selectedOption}" th:style="${rev.correct} ? 'color: var(--color-success);' : 'color: var(--color-danger);'">A</strong></div>
+                <div>Correct Answer: <strong style="color: var(--color-success);" th:text="${rev.question.correctOption}">A</strong></div>
+            </div>
+
+            <div class="explanation-box">
+                <strong>Explanation:</strong> <span th:text="${rev.question.explanation}">Explanation text</span>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 1.5rem; justify-content: center;">
+        <a href="/" class="btn btn-primary">Start New Exam</a>
+        <a href="/history" class="btn btn-secondary">View All Exam History</a>
+    </div>
+</div>
+
+</body>
+</html>
