@@ -21,11 +21,9 @@ WORKDIR /app
 # Copy executable JAR from builder stage
 COPY --from=builder /app/target/onlineexam-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose server port
+# Expose server port (Render uses PORT env var)
 EXPOSE 8080
 
-# Environment variables
-ENV PORT=8080
-
 # Launch Spring Boot app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Render injects PORT env var — Spring Boot reads server.port from it
+ENTRYPOINT ["java", "-jar", "app.jar", "--server.port=${PORT:-8080}"]

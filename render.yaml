@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: online-exam-system
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: h2
+      - key: PORT
+        value: 8080
+    healthCheckPath: /
+    autoDeploy: true
