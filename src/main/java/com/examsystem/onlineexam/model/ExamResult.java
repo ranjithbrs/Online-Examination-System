@@ -2,6 +2,8 @@ package com.examsystem.onlineexam.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Table(name = "exam_results")
@@ -39,6 +41,12 @@ public class ExamResult {
     private String integrityStatus; // "High Integrity (Normal)", "Moderate Warning", "High Risk / Flagged"
 
     private LocalDateTime submittedAt;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "exam_result_answers", joinColumns = @JoinColumn(name = "exam_result_id"))
+    @MapKeyColumn(name = "question_id")
+    @Column(name = "selected_option")
+    private Map<Long, String> selectedAnswers = new HashMap<>();
 
     public ExamResult() {
     }
@@ -185,5 +193,13 @@ public class ExamResult {
 
     public void setSubmittedAt(LocalDateTime submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public Map<Long, String> getSelectedAnswers() {
+        return selectedAnswers;
+    }
+
+    public void setSelectedAnswers(Map<Long, String> selectedAnswers) {
+        this.selectedAnswers = selectedAnswers;
     }
 }

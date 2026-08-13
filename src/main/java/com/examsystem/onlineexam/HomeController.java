@@ -128,10 +128,8 @@ public class HomeController {
             return "redirect:/";
         }
 
-        @SuppressWarnings("unchecked")
-        Map<Long, String> userAnswers = (Map<Long, String>) session.getAttribute("userAnswers_" + id);
-
-        List<QuestionReviewDto> questionReviews = examService.getQuestionReviews(userAnswers);
+        // Load question reviews directly from DB-persisted ExamResult
+        List<QuestionReviewDto> questionReviews = examService.getQuestionReviews(result);
         List<ViolationLog> violationLogs = examService.getViolationLogs(id);
 
         model.addAttribute("result", result);
@@ -146,5 +144,39 @@ public class HomeController {
         List<ExamResult> results = examService.getAllExamResults();
         model.addAttribute("results", results);
         return "history";
+    }
+
+    // Teacher Question Management Routes
+    @GetMapping("/admin/questions")
+    public String manageQuestions(Model model) {
+        model.addAttribute("questions", examService.getAllQuestions());
+        model.addAttribute("newQuestion", new com.examsystem.onlineexam.dto.QuestionFormDto());
+        return "question-manage";
+    }
+
+    @PostMapping("/admin/questions/save")
+    public String saveQuestion(@ModelAttribute com.examsystem.onlineexam.dto.QuestionFormDto dto) {
+        Question q = dto.getId() != null ? examService.getQuestionById(dto.getId()) : new Question();
+        if (q == null) {
+            q = new Question();
+        }
+        q.setQuestionText(dto.getQuestionText());
+        q.setOptionA(dto.getOptionA());
+        q.setOptionB(dto.getOptionB());
+        q.setOptionC(dto.getOptionC());
+        q.setOptionD(dto.getOptionD());
+        q.setCorrectOption(dto.getCorrectOption() != null ? dto.getCorrectOption().trim().toUpperCase() : "A");
+        q.setExplanation(dto.getExplanation());
+        q.setCategory(dto.getCategory() != null && !dto.getCategory().isBlank() ? dto.getCategory() : "General");
+        q.setMarks(dto.getMarks() > 0 ? dto.getMarks() : 1);
+
+        examService.saveQuestion(q);
+        return "redirect:/admin/questions";
+    }
+
+    @GetMapping("/admin/questions/delete/{id}")
+    public String deleteQuestion(@PathVariable Long id) {
+        examService.deleteQuestion(id);
+        return "redirect:/admin/questions";
     }
 }

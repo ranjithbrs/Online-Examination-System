@@ -56,6 +56,10 @@
         <input type="hidden" name="fullscreenExit" id="fullscreenField" value="0">
         <input type="hidden" name="windowBlur" id="blurField" value="0">
 
+        <div class="progress-bar-container">
+            <div id="examProgressBar" class="progress-bar-fill"></div>
+        </div>
+
         <div class="exam-layout">
             <!-- Left Main Content: Questions -->
             <div>
@@ -273,6 +277,7 @@ function updatePalette(qId) {
     if (paletteBtn) {
         paletteBtn.classList.add("answered");
     }
+    updateProgress();
 }
 
 function clearAnswer(qId) {
@@ -283,6 +288,19 @@ function clearAnswer(qId) {
     const paletteBtn = document.getElementById(`pbtn-${qId}`);
     if (paletteBtn) {
         paletteBtn.classList.remove("answered");
+    }
+    updateProgress();
+}
+
+function updateProgress() {
+    const totalBtns = document.querySelectorAll('.palette-btn').length;
+    const answeredBtns = document.querySelectorAll('.palette-btn.answered').length;
+    if (totalBtns > 0) {
+        const percent = (answeredBtns / totalBtns) * 100;
+        const progressBar = document.getElementById("examProgressBar");
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+        }
     }
 }
 

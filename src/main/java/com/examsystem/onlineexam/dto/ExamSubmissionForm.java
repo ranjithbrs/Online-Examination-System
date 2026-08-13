@@ -1,22 +1,40 @@
 package com.examsystem.onlineexam.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ExamSubmissionForm {
 
+    @NotBlank(message = "Student name is required")
     private String studentName;
+
+    @NotBlank(message = "Student email is required")
+    @Email(message = "Please provide a valid email address")
     private String studentEmail;
+
+    @NotBlank(message = "Roll number is required")
     private String rollNumber;
 
     // Map of questionId -> selectedOption ("A", "B", "C", "D")
     private Map<Long, String> answers = new HashMap<>();
 
     // Proctoring Metrics
+    @Min(value = 0, message = "Tab switch count must be positive")
     private int tabSwitch = 0;
+
+    @Min(value = 0, message = "Copy count must be positive")
     private int copyCount = 0;
+
+    @Min(value = 0, message = "Right click count must be positive")
     private int rightClick = 0;
+
+    @Min(value = 0, message = "Fullscreen exit count must be positive")
     private int fullscreenExit = 0;
+
+    @Min(value = 0, message = "Window blur count must be positive")
     private int windowBlur = 0;
 
     // JSON string or comma-separated log of proctoring events
