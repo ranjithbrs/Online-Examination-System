@@ -1,5 +1,16 @@
 # Online Examination & Proctoring System
 
+<div align="center">
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://online-examination-system-dcoc.onrender.com)
+[![Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+**🚀 Live Application**: **[https://online-examination-system-dcoc.onrender.com](https://online-examination-system-dcoc.onrender.com)**
+
+</div>
+
 A modern, robust, and full-featured **Spring Boot Web Application** designed for conducting secure online examinations with real-time proctoring security, candidate analytics, automated grading, teacher question management, and a full RESTful API.
 
 ---
@@ -93,13 +104,14 @@ Full JSON API for integrations and automated testing:
 
 ### 🔗 Access the Application
 
-| URL | Description |
-|-----|-------------|
-| http://localhost:8080/ | Candidate Registration & Exam Portal |
-| http://localhost:8080/history | Admin / Teacher Audit Dashboard |
-| http://localhost:8080/admin/questions | Teacher Question Bank Management |
-| http://localhost:8080/h2-console | H2 Database Console *(default profile only)* |
-| http://localhost:8080/api/v1/questions | REST API — Question list |
+| Portal / Feature | Local URL | Live Cloud URL (Render) |
+|---|---|---|
+| **Candidate Registration & Exam Portal** | `http://localhost:8080/` | [https://online-examination-system-dcoc.onrender.com/](https://online-examination-system-dcoc.onrender.com/) |
+| **Admin / Teacher Audit Dashboard** | `http://localhost:8080/history` | [https://online-examination-system-dcoc.onrender.com/history](https://online-examination-system-dcoc.onrender.com/history) |
+| **Teacher Question Bank Management** | `http://localhost:8080/admin/questions` | [https://online-examination-system-dcoc.onrender.com/admin/questions](https://online-examination-system-dcoc.onrender.com/admin/questions) |
+| **REST API — Question List** | `http://localhost:8080/api/v1/questions` | [https://online-examination-system-dcoc.onrender.com/api/v1/questions](https://online-examination-system-dcoc.onrender.com/api/v1/questions) |
+| **System Health Check** | `http://localhost:8080/health` | [https://online-examination-system-dcoc.onrender.com/health](https://online-examination-system-dcoc.onrender.com/health) |
+| **H2 Database Web Console** | `http://localhost:8080/h2-console` | *Internal only* |
 
 ---
 
