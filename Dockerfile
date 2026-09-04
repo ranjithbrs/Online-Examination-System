@@ -24,6 +24,9 @@ COPY --from=builder /app/target/onlineexam-0.0.1-SNAPSHOT.jar app.jar
 # Expose server port (Render uses PORT env var)
 EXPOSE 8080
 
+# Environment variables
+ENV PORT=8080
+
 # Launch Spring Boot app
 # Render injects PORT env var — using sh -c allows shell parameter expansion
-ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-8080}"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar app.jar"]
