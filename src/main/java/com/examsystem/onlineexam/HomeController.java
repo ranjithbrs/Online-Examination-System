@@ -41,6 +41,12 @@ public class HomeController {
         return "start";
     }
 
+    @GetMapping("/health")
+    @ResponseBody
+    public Map<String, String> healthCheck() {
+        return Map.of("status", "UP");
+    }
+
     @PostMapping("/start-exam")
     public String registerAndStart(
             @RequestParam String studentName,

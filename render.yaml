@@ -9,5 +9,5 @@ services:
         value: h2
       - key: PORT
         value: 8080
-    healthCheckPath: /
+    healthCheckPath: /health
     autoDeploy: true

@@ -112,6 +112,23 @@ docker run -p 8080:8080 online-exam-system
 
 ---
 
+## ☁️ Cloud Deployment (Render / Railway / Docker)
+
+The application is pre-configured for one-click or containerized deployment on cloud platforms like **Render**:
+
+1. **Zero-Config Deployment (H2 In-Memory)**:
+   - Deploy directly using the provided `Dockerfile` or `render.yaml`.
+   - The app automatically binds to the cloud platform's dynamic `$PORT` and starts immediately with seeded questions in H2.
+   - Health check path is available at `/health` (or `/api/v1/health`).
+
+2. **Persistent Cloud Database (MySQL)**:
+   - If connecting to an external database (e.g. Aiven MySQL, AWS RDS, Railway), provide the following environment variables in your cloud dashboard:
+     - `DB_URL`: `jdbc:mysql://<host>:<port>/<dbname>?useSSL=true`
+     - `DB_USERNAME`: `<your_db_username>`
+     - `DB_PASSWORD`: `<your_db_password>`
+
+---
+
 ## 🧪 Running Automated Tests
 
 Runs 7 tests: context loading, question bank seeding, clean exam grading, suspicious exam & violation logging, **answer persistence across sessions**, question CRUD operations, and REST API endpoints.
