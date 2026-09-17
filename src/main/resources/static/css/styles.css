@@ -562,3 +562,41 @@ body {
     text-align: center;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 }
+
+/* Exam Progress Bar */
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(15, 23, 42, 0.8);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-primary), #10b981);
+    transition: width 0.3s ease;
+}
+
+/* Print Styles for Audit Reports */
+@media print {
+    .navbar, .btn, #startModal, #toastContainer {
+        display: none !important;
+    }
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    .card, .result-hero, .review-item {
+        background: white !important;
+        color: black !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    .card-title, h1, h2, h3, h4, strong {
+        color: black !important;
+    }
+}

@@ -14,8 +14,9 @@
         <span>SecureExam Audit Dashboard</span>
     </a>
     <div class="nav-links">
-        <a href="/" class="nav-link">New Exam</a>
-        <a href="/history" class="nav-link">Audit Dashboard</a>
+        <a href="/" class="nav-link">Candidate View</a>
+        <a href="/history" class="nav-link active">Audit Dashboard</a>
+        <a href="/admin/questions" class="nav-link">Question Bank</a>
     </div>
 </nav>
 
@@ -27,7 +28,10 @@
                 Browse past examination submissions, score records, and proctoring integrity scores.
             </p>
         </div>
-        <a href="/" class="btn btn-primary">+ Launch Exam</a>
+        <div style="display: flex; gap: 1rem;">
+            <a href="/admin/questions" class="btn btn-secondary">Manage Question Bank</a>
+            <a href="/" class="btn btn-primary">+ Launch Exam</a>
+        </div>
     </div>
 
     <div class="card">
@@ -37,55 +41,77 @@
             <a href="/" class="btn btn-primary" style="margin-top: 1.5rem;">Take Exam Now</a>
         </div>
 
-        <div th:unless="${#lists.isEmpty(results)}" class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Candidate</th>
-                        <th>Roll No</th>
-                        <th>Score</th>
-                        <th>Result</th>
-                        <th>Trust Score</th>
-                        <th>Integrity Status</th>
-                        <th>Submitted At</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="r : ${results}">
-                        <td>
-                            <strong th:text="${r.studentName}" style="color: var(--text-primary);">John Doe</strong><br>
-                            <span th:text="${r.studentEmail}" style="font-size: 0.85rem; color: var(--text-secondary);">john@example.com</span>
-                        </td>
-                        <td th:text="${r.rollNumber}">REG-1001</td>
-                        <td>
-                            <strong th:text="${r.score} + ' / ' + ${r.totalMarks}">5 / 6</strong>
-                            <span th:text="'(' + ${r.percentage} + '%)'" style="font-size: 0.85rem; color: var(--text-secondary);">83.3%</span>
-                        </td>
-                        <td>
-                            <span th:if="${r.passed}" class="badge badge-success">PASSED</span>
-                            <span th:unless="${r.passed}" class="badge badge-danger">FAILED</span>
-                        </td>
-                        <td>
-                            <strong th:text="${r.trustScore} + '%'">95%</strong>
-                        </td>
-                        <td>
-                            <span th:if="${r.trustScore >= 85}" class="badge badge-success" th:text="${r.integrityStatus}">High Integrity</span>
-                            <span th:if="${r.trustScore >= 60 and r.trustScore < 85}" class="badge badge-warning" th:text="${r.integrityStatus}">Moderate Warning</span>
-                            <span th:if="${r.trustScore < 60}" class="badge badge-danger" th:text="${r.integrityStatus}">High Risk</span>
-                        </td>
-                        <td th:text="${#temporals.format(r.submittedAt, 'yyyy-MM-dd HH:mm')}">Date</td>
-                        <td>
-                            <a th:href="@{'/result/' + ${r.id}}" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">
-                                Inspect Report
-                            </a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div th:unless="${#lists.isEmpty(results)}">
+            <div style="margin-bottom: 1.5rem;">
+                <input type="text" id="searchInput" onkeyup="filterHistoryTable()" class="form-control" placeholder="🔍 Search by Candidate Name, Email, or Roll Number...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Candidate</th>
+                            <th>Roll No</th>
+                            <th>Score</th>
+                            <th>Result</th>
+                            <th>Trust Score</th>
+                            <th>Integrity Status</th>
+                            <th>Submitted At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${results}">
+                            <td>
+                                <strong class="cand-name" th:text="${r.studentName}" style="color: var(--text-primary);">John Doe</strong><br>
+                                <span class="cand-email" th:text="${r.studentEmail}" style="font-size: 0.85rem; color: var(--text-secondary);">john@example.com</span>
+                            </td>
+                            <td class="cand-roll" th:text="${r.rollNumber}">REG-1001</td>
+                            <td>
+                                <strong th:text="${r.score} + ' / ' + ${r.totalMarks}">5 / 6</strong>
+                                <span th:text="'(' + ${r.percentage} + '%)'" style="font-size: 0.85rem; color: var(--text-secondary);">83.3%</span>
+                            </td>
+                            <td>
+                                <span th:if="${r.passed}" class="badge badge-success">PASSED</span>
+                                <span th:unless="${r.passed}" class="badge badge-danger">FAILED</span>
+                            </td>
+                            <td>
+                                <strong th:text="${r.trustScore} + '%'">95%</strong>
+                            </td>
+                            <td>
+                                <span th:if="${r.trustScore >= 85}" class="badge badge-success" th:text="${r.integrityStatus}">High Integrity</span>
+                                <span th:if="${r.trustScore >= 60 and r.trustScore < 85}" class="badge badge-warning" th:text="${r.integrityStatus}">Moderate Warning</span>
+                                <span th:if="${r.trustScore < 60}" class="badge badge-danger" th:text="${r.integrityStatus}">High Risk</span>
+                            </td>
+                            <td th:text="${#temporals.format(r.submittedAt, 'yyyy-MM-dd HH:mm')}">Date</td>
+                            <td>
+                                <a th:href="@{'/result/' + ${r.id}}" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">
+                                    Inspect Report
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+function filterHistoryTable() {
+    const input = document.getElementById("searchInput").value.toLowerCase();
+    const rows = document.querySelectorAll("#historyTable tbody tr");
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        if (text.includes(input)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+</script>
 
 </body>
 </html>

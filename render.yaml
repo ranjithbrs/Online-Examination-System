@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: online-exam-system
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8080
+    healthCheckPath: /health
+    autoDeploy: true

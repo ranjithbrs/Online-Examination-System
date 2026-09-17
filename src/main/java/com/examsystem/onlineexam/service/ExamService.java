@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -110,6 +111,7 @@ public class ExamService {
         result.setTrustScore(trustScore);
         result.setIntegrityStatus(integrityStatus);
         result.setSubmittedAt(LocalDateTime.now());
+        result.setSelectedAnswers(submittedAnswers != null ? new HashMap<>(submittedAnswers) : new HashMap<>());
 
         ExamResult savedResult = examResultRepository.save(result);
 
@@ -136,6 +138,13 @@ public class ExamService {
         if (form.getWindowBlur() > 0) {
             violationLogRepository.save(new ViolationLog(resultId, "WINDOW_BLUR", "Browser window lost focus " + form.getWindowBlur() + " time(s)", now));
         }
+    }
+
+    public List<QuestionReviewDto> getQuestionReviews(ExamResult result) {
+        Map<Long, String> answers = (result != null && result.getSelectedAnswers() != null) 
+            ? result.getSelectedAnswers() 
+            : new HashMap<>();
+        return getQuestionReviews(answers);
     }
 
     public List<QuestionReviewDto> getQuestionReviews(Map<Long, String> userAnswers) {
@@ -174,5 +183,19 @@ public class ExamService {
         }
 
         return displayList;
+    }
+
+    public Question getQuestionById(Long id) {
+        return questionRepository.findById(id).orElse(null);
+    }
+
+    @Transactional
+    public Question saveQuestion(Question question) {
+        return questionRepository.save(question);
+    }
+
+    @Transactional
+    public void deleteQuestion(Long id) {
+        questionRepository.deleteById(id);
     }
 }

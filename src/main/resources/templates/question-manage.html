@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Portal - Question Bank Management</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="brand">
+        <div class="brand-icon">E</div>
+        <span>SecureExam Admin Portal</span>
+    </a>
+    <div class="nav-links">
+        <a href="/" class="nav-link">Candidate View</a>
+        <a href="/history" class="nav-link">Audit Dashboard</a>
+        <a href="/admin/questions" class="nav-link active">Question Bank</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card-header" style="margin-bottom: 2rem;">
+        <div>
+            <h1 style="font-size: 2rem; font-weight: 800;">Question Bank Management</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+                Create, update, or remove exam questions in real-time.
+            </p>
+        </div>
+        <button onclick="toggleCreateModal()" class="btn btn-primary">+ Add New Question</button>
+    </div>
+
+    <!-- Create / Edit Question Modal/Card -->
+    <div id="questionFormCard" class="card" style="display: none; margin-bottom: 2rem; border-color: var(--accent-primary);">
+        <div class="card-header">
+            <h2 id="formCardTitle" class="card-title">Add New Question</h2>
+            <button type="button" class="btn btn-secondary" onclick="toggleCreateModal()" style="padding: 0.25rem 0.6rem;">✕ Close</button>
+        </div>
+
+        <form action="/admin/questions/save" method="post" id="questionForm">
+            <input type="hidden" name="id" id="fieldId">
+
+            <div class="form-group">
+                <label class="form-label">Question Text</label>
+                <textarea name="questionText" id="fieldQuestionText" class="form-control" rows="3" placeholder="e.g. What is the primary purpose of Spring Security?" required></textarea>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Option A</label>
+                    <input type="text" name="optionA" id="fieldOptionA" class="form-control" placeholder="Option A text" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Option B</label>
+                    <input type="text" name="optionB" id="fieldOptionB" class="form-control" placeholder="Option B text" required>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Option C</label>
+                    <input type="text" name="optionC" id="fieldOptionC" class="form-control" placeholder="Option C text" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Option D</label>
+                    <input type="text" name="optionD" id="fieldOptionD" class="form-control" placeholder="Option D text" required>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label class="form-label">Correct Option</label>
+                    <select name="correctOption" id="fieldCorrectOption" class="form-control" required>
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" name="category" id="fieldCategory" class="form-control" placeholder="e.g. Core Java" value="General">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Marks</label>
+                    <input type="number" name="marks" id="fieldMarks" class="form-control" value="1" min="1" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Explanation (Feedback for candidates)</label>
+                <textarea name="explanation" id="fieldExplanation" class="form-control" rows="2" placeholder="Brief explanation of why the correct option is right."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="toggleCreateModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Question</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Question Bank Table Card -->
+    <div class="card">
+        <div th:if="${#lists.isEmpty(questions)}" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+            <h3>No Questions In Bank</h3>
+            <p style="margin-top: 0.5rem;">Click the "+ Add New Question" button above to populate the question bank.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(questions)}" class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 35%;">Question</th>
+                        <th style="width: 15%;">Category</th>
+                        <th style="width: 15%;">Correct Option</th>
+                        <th style="width: 10%;">Marks</th>
+                        <th style="width: 20%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="q, iter : ${questions}">
+                        <td th:text="${iter.count}">1</td>
+                        <td>
+                            <strong th:text="${q.questionText}" style="color: var(--text-primary);">Question text</strong>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                                A: <span th:text="${q.optionA}"></span> | B: <span th:text="${q.optionB}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-warning" th:text="${q.category}">General</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-success" th:text="'Option ' + ${q.correctOption}">Option A</span>
+                        </td>
+                        <td>
+                            <strong th:text="${q.marks} + ' Pt(s)'">1 Pt(s)</strong>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button type="button" class="btn btn-secondary" style="padding: 0.35rem 0.65rem; font-size: 0.8rem;"
+                                        th:data-id="${q.id}"
+                                        th:data-text="${q.questionText}"
+                                        th:data-opta="${q.optionA}"
+                                        th:data-optb="${q.optionB}"
+                                        th:data-optc="${q.optionC}"
+                                        th:data-optd="${q.optionD}"
+                                        th:data-correct="${q.correctOption}"
+                                        th:data-cat="${q.category}"
+                                        th:data-marks="${q.marks}"
+                                        th:data-exp="${q.explanation}"
+                                        onclick="editQuestion(this)">
+                                    Edit
+                                </button>
+                                <a th:href="@{'/admin/questions/delete/' + ${q.id}}" 
+                                   class="btn btn-danger" 
+                                   style="padding: 0.35rem 0.65rem; font-size: 0.8rem;"
+                                   onclick="return confirm('Are you sure you want to delete this question?')">
+                                    Delete
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCreateModal() {
+    const card = document.getElementById("questionFormCard");
+    if (card.style.display === "none") {
+        document.getElementById("formCardTitle").innerText = "Add New Question";
+        document.getElementById("questionForm").reset();
+        document.getElementById("fieldId").value = "";
+        card.style.display = "block";
+        card.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        card.style.display = "none";
+    }
+}
+
+function editQuestion(btn) {
+    const card = document.getElementById("questionFormCard");
+    document.getElementById("formCardTitle").innerText = "Edit Question #" + btn.getAttribute("data-id");
+    
+    document.getElementById("fieldId").value = btn.getAttribute("data-id");
+    document.getElementById("fieldQuestionText").value = btn.getAttribute("data-text");
+    document.getElementById("fieldOptionA").value = btn.getAttribute("data-opta");
+    document.getElementById("fieldOptionB").value = btn.getAttribute("data-optb");
+    document.getElementById("fieldOptionC").value = btn.getAttribute("data-optc");
+    document.getElementById("fieldOptionD").value = btn.getAttribute("data-optd");
+    document.getElementById("fieldCorrectOption").value = btn.getAttribute("data-correct");
+    document.getElementById("fieldCategory").value = btn.getAttribute("data-cat");
+    document.getElementById("fieldMarks").value = btn.getAttribute("data-marks");
+    document.getElementById("fieldExplanation").value = btn.getAttribute("data-exp") || "";
+
+    card.style.display = "block";
+    card.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>

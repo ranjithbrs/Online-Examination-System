@@ -86,6 +86,28 @@ public class DataInitializer implements CommandLineRunner {
                     "Thymeleaf is a modern server-side Java template engine for web and standalone environments.",
                     "Web Architecture",
                     1
+                ),
+                new Question(
+                    "Which HTTP method is idempotent and primarily used to update an existing resource completely?",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "CONNECT",
+                    "B",
+                    "PUT is idempotent, meaning multiple identical requests produce the same result as a single request.",
+                    "REST Architecture",
+                    1
+                ),
+                new Question(
+                    "What is the average time complexity of searching an element in a balanced Binary Search Tree (BST)?",
+                    "O(1)",
+                    "O(n)",
+                    "O(log n)",
+                    "O(n^2)",
+                    "C",
+                    "In a balanced Binary Search Tree, searching takes O(log n) time as each comparison eliminates half the remaining elements.",
+                    "Data Structures",
+                    1
                 )
             );
 
