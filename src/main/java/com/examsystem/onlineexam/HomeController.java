@@ -216,7 +216,23 @@ public class HomeController {
     // Teacher Question Management Routes
     @GetMapping("/admin/questions")
     public String manageQuestions(Model model) {
-        model.addAttribute("questions", examService.getAllQuestions());
+        List<Question> questions = examService.getAllQuestions();
+        int totalQuestions = questions.size();
+        int totalMarks = questions.stream().mapToInt(Question::getMarks).sum();
+
+        Map<String, Long> topicCounts = questions.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        q -> (q.getCategory() != null && !q.getCategory().isBlank()) ? q.getCategory() : "General",
+                        java.util.stream.Collectors.counting()
+                ));
+        List<String> topics = new java.util.ArrayList<>(topicCounts.keySet());
+        java.util.Collections.sort(topics);
+
+        model.addAttribute("questions", questions);
+        model.addAttribute("totalQuestions", totalQuestions);
+        model.addAttribute("totalMarks", totalMarks);
+        model.addAttribute("topicCounts", topicCounts);
+        model.addAttribute("topics", topics);
         model.addAttribute("newQuestion", new com.examsystem.onlineexam.dto.QuestionFormDto());
         return "question-manage";
     }

@@ -31,6 +31,30 @@
         <button onclick="toggleCreateModal()" class="btn btn-primary">+ Add New Question</button>
     </div>
 
+    <!-- Metrics Analytics Cards -->
+    <div class="grid-4" style="margin-bottom: 2rem;">
+        <div class="card" style="padding: 1.25rem; text-align: center;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Total Questions</span>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-top: 0.25rem;" th:text="${totalQuestions}">6</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Active in question bank</div>
+        </div>
+        <div class="card" style="padding: 1.25rem; text-align: center;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Active Topics</span>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--accent-primary); margin-top: 0.25rem;" th:text="${#lists.size(topics)}">3</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Curriculum domains</div>
+        </div>
+        <div class="card" style="padding: 1.25rem; text-align: center;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Total Marks</span>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--color-success); margin-top: 0.25rem;" th:text="${totalMarks} + ' Pts'">6 Pts</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Cumulative weight</div>
+        </div>
+        <div class="card" style="padding: 1.25rem; text-align: center;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Passing Standard</span>
+            <div style="font-size: 2rem; font-weight: 800; color: var(--color-warning); margin-top: 0.25rem;">40%</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Minimum passing mark</div>
+        </div>
+    </div>
+
     <!-- Create / Edit Question Modal/Card -->
     <div id="questionFormCard" class="card" style="display: none; margin-bottom: 2rem; border-color: var(--accent-primary);">
         <div class="card-header">
@@ -102,6 +126,27 @@
         </form>
     </div>
 
+    <!-- Topic Filter & Search Bar -->
+    <div class="card" style="margin-bottom: 2rem; padding: 1.25rem;">
+        <div style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; min-width: 260px;">
+                <input type="text" id="questionSearchInput" onkeyup="filterQuestions()" class="form-control" placeholder="🔍 Search across question text, options, explanations...">
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-right: 0.25rem;">Topic:</span>
+                <button type="button" class="btn btn-primary topic-pill active-pill" data-topic="ALL" onclick="setTopicFilterFromButton(this)" style="padding: 0.35rem 0.85rem; font-size: 0.85rem; border-radius: 9999px;">
+                    All Topics (<span th:text="${totalQuestions}">6</span>)
+                </button>
+                <button th:each="t : ${topics}" type="button" class="btn btn-secondary topic-pill" 
+                        th:data-topic="${t}"
+                        onclick="setTopicFilterFromButton(this)"
+                        style="padding: 0.35rem 0.85rem; font-size: 0.85rem; border-radius: 9999px;">
+                    <span th:text="${t}">Topic</span> (<span th:text="${topicCounts[t]}">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Question Bank Table Card -->
     <div class="card">
         <div th:if="${#lists.isEmpty(questions)}" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
@@ -121,8 +166,11 @@
                         <th style="width: 20%;">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr th:each="q, iter : ${questions}">
+                <tbody id="questionTableBody">
+                    <tr th:each="q, iter : ${questions}" 
+                        class="question-row"
+                        th:data-topic="${q.category != null and !q.category.isBlank() ? q.category : 'General'}"
+                        th:data-search="${#strings.toLowerCase(q.questionText + ' ' + q.optionA + ' ' + q.optionB + ' ' + q.optionC + ' ' + q.optionD + ' ' + (q.explanation != null ? q.explanation : '') + ' ' + q.category)}">
                         <td th:text="${iter.count}">1</td>
                         <td>
                             <strong th:text="${q.questionText}" style="color: var(--text-primary);">Question text</strong>
@@ -131,7 +179,7 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge badge-warning" th:text="${q.category}">General</span>
+                            <span class="badge badge-warning" th:text="${q.category != null and !q.category.isBlank() ? q.category : 'General'}" style="font-weight: 600;">General</span>
                         </td>
                         <td>
                             <span class="badge badge-success" th:text="'Option ' + ${q.correctOption}">Option A</span>
@@ -162,6 +210,11 @@
                                     Delete
                                 </a>
                             </div>
+                        </td>
+                    </tr>
+                    <tr id="noMatchesRow" style="display: none;">
+                        <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--text-secondary);">
+                            No questions found matching your search query or topic filter.
                         </td>
                     </tr>
                 </tbody>
@@ -201,6 +254,53 @@ function editQuestion(btn) {
 
     card.style.display = "block";
     card.scrollIntoView({ behavior: 'smooth' });
+}
+
+let currentTopic = 'ALL';
+
+function setTopicFilterFromButton(buttonElement) {
+    const topic = buttonElement ? (buttonElement.getAttribute('data-topic') || 'ALL') : 'ALL';
+    setTopicFilter(topic, buttonElement);
+}
+
+function setTopicFilter(topic, buttonElement) {
+    currentTopic = topic;
+    document.querySelectorAll('.topic-pill').forEach(pill => {
+        pill.classList.remove('btn-primary', 'active-pill');
+        pill.classList.add('btn-secondary');
+    });
+    if (buttonElement) {
+        buttonElement.classList.remove('btn-secondary');
+        buttonElement.classList.add('btn-primary', 'active-pill');
+    }
+    filterQuestions();
+}
+
+function filterQuestions() {
+    const searchInput = document.getElementById('questionSearchInput');
+    const searchVal = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const rows = document.querySelectorAll('.question-row');
+    const noMatchesRow = document.getElementById('noMatchesRow');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const rowTopic = (row.getAttribute('data-topic') || '').trim();
+        const rowSearch = (row.getAttribute('data-search') || '').toLowerCase();
+
+        const matchesTopic = (currentTopic === 'ALL' || rowTopic.toLowerCase() === currentTopic.toLowerCase());
+        const matchesSearch = (searchVal === '' || rowSearch.includes(searchVal));
+
+        if (matchesTopic && matchesSearch) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (noMatchesRow) {
+        noMatchesRow.style.display = visibleCount === 0 ? '' : 'none';
+    }
 }
 </script>
 
