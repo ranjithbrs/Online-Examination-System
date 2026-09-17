@@ -14,6 +14,7 @@
         <h2 style="font-size: 1.75rem; margin-bottom: 1rem; color: var(--text-primary);">Begin Proctored Examination</h2>
         <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
             Candidate: <strong th:text="${studentName}" style="color: var(--accent-primary);">John Doe</strong> (<span th:text="${rollNumber}">REG-1234</span>)<br>
+            Subject: <strong th:text="${topicDisplayName}" style="color: var(--color-success);">All Topics</strong><br>
             Please click below to initialize full-screen mode and start your timed examination.
         </p>
         <button onclick="initializeExamSession()" class="btn btn-primary btn-block" style="padding: 1rem;">
@@ -27,6 +28,7 @@
     <a href="#" class="brand">
         <div class="brand-icon">E</div>
         <span>SecureExam Session</span>
+        <span class="badge badge-warning" th:text="${topicDisplayName}" style="font-size: 0.75rem; margin-left: 0.5rem; text-transform: uppercase; font-weight: 600;">All Topics</span>
     </a>
 
     <div style="display: flex; gap: 2rem; align-items: center;">

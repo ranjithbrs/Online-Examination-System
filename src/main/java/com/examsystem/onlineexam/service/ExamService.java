@@ -200,10 +200,38 @@ public class ExamService {
         return reviews;
     }
 
+    public List<String> getDistinctTopics() {
+        return questionRepository.findAll().stream()
+                .map(q -> q.getCategory() != null && !q.getCategory().isBlank() ? q.getCategory().trim() : "General")
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
     public List<com.examsystem.onlineexam.dto.QuestionDisplayDto> getRandomizedQuestions() {
         List<Question> questions = new ArrayList<>(questionRepository.findAll());
         Collections.shuffle(questions);
+        return formatQuestionsForDisplay(questions);
+    }
 
+    public List<com.examsystem.onlineexam.dto.QuestionDisplayDto> getRandomizedQuestionsByTopic(String topic) {
+        if (topic == null || topic.isBlank() || "ALL".equalsIgnoreCase(topic.trim())) {
+            return getRandomizedQuestions();
+        }
+
+        List<Question> questions = new ArrayList<>(questionRepository.findAll().stream()
+                .filter(q -> q.getCategory() != null && q.getCategory().trim().equalsIgnoreCase(topic.trim()))
+                .toList());
+
+        if (questions.isEmpty()) {
+            return getRandomizedQuestions();
+        }
+
+        Collections.shuffle(questions);
+        return formatQuestionsForDisplay(questions);
+    }
+
+    private List<com.examsystem.onlineexam.dto.QuestionDisplayDto> formatQuestionsForDisplay(List<Question> questions) {
         List<com.examsystem.onlineexam.dto.QuestionDisplayDto> displayList = new ArrayList<>();
         String[] labels = {"A", "B", "C", "D"};
 

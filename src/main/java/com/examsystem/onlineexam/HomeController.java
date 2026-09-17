@@ -51,7 +51,9 @@ public class HomeController {
         model.addAttribute("rollNumber", rollNumber != null ? rollNumber : "");
 
         List<Question> questions = examService.getAllQuestions();
+        List<String> topics = examService.getDistinctTopics();
         model.addAttribute("totalQuestions", questions.size());
+        model.addAttribute("topics", topics);
         model.addAttribute("examDurationMinutes", 10);
 
         return "start";
@@ -68,11 +70,13 @@ public class HomeController {
             @RequestParam String studentName,
             @RequestParam String studentEmail,
             @RequestParam String rollNumber,
+            @RequestParam(required = false, defaultValue = "ALL") String selectedTopic,
             HttpSession session) {
 
         session.setAttribute("studentName", studentName);
         session.setAttribute("studentEmail", studentEmail);
         session.setAttribute("rollNumber", rollNumber);
+        session.setAttribute("selectedTopic", selectedTopic);
         session.removeAttribute("sessionQuestions");
         session.removeAttribute("examStartTime");
         session.removeAttribute("examDraft");
@@ -85,6 +89,10 @@ public class HomeController {
         String studentName = (String) session.getAttribute("studentName");
         String studentEmail = (String) session.getAttribute("studentEmail");
         String rollNumber = (String) session.getAttribute("rollNumber");
+        String selectedTopic = (String) session.getAttribute("selectedTopic");
+        if (selectedTopic == null || selectedTopic.isBlank()) {
+            selectedTopic = "ALL";
+        }
 
         if (studentName == null || studentName.isBlank()) {
             studentName = "Candidate User";
@@ -96,7 +104,7 @@ public class HomeController {
         List<com.examsystem.onlineexam.dto.QuestionDisplayDto> questions = 
                 (List<com.examsystem.onlineexam.dto.QuestionDisplayDto>) session.getAttribute("sessionQuestions");
         if (questions == null || questions.isEmpty()) {
-            questions = examService.getRandomizedQuestions();
+            questions = examService.getRandomizedQuestionsByTopic(selectedTopic);
             session.setAttribute("sessionQuestions", questions);
         }
 
@@ -111,10 +119,16 @@ public class HomeController {
         model.addAttribute("draftAnswers", draft != null ? draft.getAnswers() : new HashMap<>());
         model.addAttribute("draft", draft != null ? draft : new com.examsystem.onlineexam.dto.ExamDraftDto());
 
+        String topicDisplayName = "ALL".equalsIgnoreCase(selectedTopic) 
+                ? "All Topics (Comprehensive)" 
+                : selectedTopic;
+
         model.addAttribute("studentName", studentName);
         model.addAttribute("studentEmail", studentEmail);
         model.addAttribute("rollNumber", rollNumber);
         model.addAttribute("questions", questions);
+        model.addAttribute("selectedTopic", selectedTopic);
+        model.addAttribute("topicDisplayName", topicDisplayName);
         model.addAttribute("durationMinutes", 10);
 
         return "exam";

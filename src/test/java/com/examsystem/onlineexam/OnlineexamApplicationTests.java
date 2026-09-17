@@ -460,7 +460,53 @@ class OnlineexamApplicationTests {
                 .andExpect(redirectedUrl("/admin/questions"))
                 .andExpect(flash().attributeExists("errorMessage"));
     }
+
+    @Test
+    void testTopicFilteredQuestionGeneration() {
+        List<com.examsystem.onlineexam.dto.QuestionDisplayDto> dbQuestions = 
+                examService.getRandomizedQuestionsByTopic("Database Systems");
+        assertFalse(dbQuestions.isEmpty(), "Database Systems topic should contain questions");
+        for (com.examsystem.onlineexam.dto.QuestionDisplayDto q : dbQuestions) {
+            assertEquals("Database Systems", q.getCategory());
+        }
+
+        List<String> distinctTopics = examService.getDistinctTopics();
+        assertFalse(distinctTopics.isEmpty());
+        assertTrue(distinctTopics.contains("Database Systems"));
+    }
+
+    @Test
+    void testTopicFilteredExamStartAndSessionIsolation() throws Exception {
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+
+        // 1. Register with topic selection
+        mockMvc.perform(post("/start-exam")
+                .session(session)
+                .param("studentName", "Topic Candidate")
+                .param("studentEmail", "topic@test.com")
+                .param("rollNumber", "TOPIC-001")
+                .param("selectedTopic", "Database Systems"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/exam"));
+
+        // 2. Open exam page and verify questions are filtered
+        mockMvc.perform(get("/exam").session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("selectedTopic", "Database Systems"))
+                .andExpect(model().attribute("topicDisplayName", "Database Systems"))
+                .andExpect(model().attributeExists("questions"));
+
+        @SuppressWarnings("unchecked")
+        List<com.examsystem.onlineexam.dto.QuestionDisplayDto> sessionQuestions = 
+                (List<com.examsystem.onlineexam.dto.QuestionDisplayDto>) session.getAttribute("sessionQuestions");
+        assertNotNull(sessionQuestions);
+        assertFalse(sessionQuestions.isEmpty());
+        for (com.examsystem.onlineexam.dto.QuestionDisplayDto q : sessionQuestions) {
+            assertEquals("Database Systems", q.getCategory());
+        }
+    }
 }
+
 
 
 
