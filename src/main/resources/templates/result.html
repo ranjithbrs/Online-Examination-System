@@ -38,6 +38,8 @@
         <p style="color: var(--text-secondary); margin-top: 0.5rem;">
             Candidate: <strong th:text="${result.studentName}" style="color: var(--text-primary);">John Doe</strong> 
             | ID: <span th:text="${result.rollNumber}">REG-1234</span>
+            | Time Taken: <strong th:text="${result.formattedTimeTaken}" style="color: var(--text-primary);">6m 20s</strong>
+            <span th:if="${result.overtime}" class="badge badge-danger" style="margin-left: 0.5rem;">OVERTIME</span>
             | Date: <span th:text="${#temporals.format(result.submittedAt, 'yyyy-MM-dd HH:mm')}">2026-07-26</span>
         </p>
 

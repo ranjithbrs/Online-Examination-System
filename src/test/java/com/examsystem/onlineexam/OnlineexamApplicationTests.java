@@ -205,4 +205,34 @@ class OnlineexamApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }
+
+    @Test
+    void testServerSideTimerEnforcementAndOvertime() {
+        // Test Normal On-Time Exam (300 seconds)
+        ExamSubmissionForm normalForm = new ExamSubmissionForm();
+        normalForm.setStudentName("OnTime Student");
+        normalForm.setStudentEmail("ontime@test.com");
+        normalForm.setRollNumber("TIME-001");
+        normalForm.setTimeTakenSeconds(300);
+
+        ExamResult normalResult = examService.evaluateAndSaveExam(normalForm);
+        assertFalse(normalResult.isOvertime());
+        assertEquals("5m 00s", normalResult.getFormattedTimeTaken());
+
+        // Test Overtime Exam (750 seconds > 630s threshold)
+        ExamSubmissionForm overtimeForm = new ExamSubmissionForm();
+        overtimeForm.setStudentName("Overtime Student");
+        overtimeForm.setStudentEmail("overtime@test.com");
+        overtimeForm.setRollNumber("TIME-002");
+        overtimeForm.setTimeTakenSeconds(750);
+
+        ExamResult overtimeResult = examService.evaluateAndSaveExam(overtimeForm);
+        assertTrue(overtimeResult.isOvertime());
+        assertEquals("12m 30s", overtimeResult.getFormattedTimeTaken());
+        assertTrue(overtimeResult.getRiskScore() >= 25, "Should include overtime penalty");
+
+        List<ViolationLog> logs = examService.getViolationLogs(overtimeResult.getId());
+        boolean hasOvertimeLog = logs.stream().anyMatch(l -> "OVERTIME_SUBMISSION".equals(l.getViolationType()));
+        assertTrue(hasOvertimeLog, "Violation log must record OVERTIME_SUBMISSION");
+    }
 }

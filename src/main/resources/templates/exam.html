@@ -55,6 +55,7 @@
         <input type="hidden" name="rightClick" id="rightClickField" value="0">
         <input type="hidden" name="fullscreenExit" id="fullscreenField" value="0">
         <input type="hidden" name="windowBlur" id="blurField" value="0">
+        <input type="hidden" name="timeTakenSeconds" id="timeTakenField" value="0">
 
         <div class="progress-bar-container">
             <div id="examProgressBar" class="progress-bar-fill"></div>
@@ -303,6 +304,7 @@ function beforeSubmitExam() {
     document.getElementById("rightClickField").value = rightClickCount;
     document.getElementById("fullscreenField").value = fullscreenExitCount;
     document.getElementById("blurField").value = windowBlurCount;
+    document.getElementById("timeTakenField").value = Math.max(1, 600 - durationSeconds);
 }
 </script>
 

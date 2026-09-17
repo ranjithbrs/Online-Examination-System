@@ -58,6 +58,7 @@ public class HomeController {
         session.setAttribute("studentEmail", studentEmail);
         session.setAttribute("rollNumber", rollNumber);
         session.removeAttribute("sessionQuestions");
+        session.removeAttribute("examStartTime");
 
         return "redirect:/exam";
     }
@@ -82,6 +83,11 @@ public class HomeController {
             session.setAttribute("sessionQuestions", questions);
         }
 
+        // Server-Side Timer Start Initialization
+        if (session.getAttribute("examStartTime") == null) {
+            session.setAttribute("examStartTime", System.currentTimeMillis());
+        }
+
         model.addAttribute("studentName", studentName);
         model.addAttribute("studentEmail", studentEmail);
         model.addAttribute("rollNumber", rollNumber);
@@ -101,6 +107,7 @@ public class HomeController {
             @RequestParam(defaultValue = "0") int rightClick,
             @RequestParam(defaultValue = "0") int fullscreenExit,
             @RequestParam(defaultValue = "0") int windowBlur,
+            @RequestParam(defaultValue = "0") int timeTakenSeconds,
             @RequestParam Map<String, String> allParams,
             HttpSession session) {
 
@@ -113,6 +120,15 @@ public class HomeController {
         form.setRightClick(rightClick);
         form.setFullscreenExit(fullscreenExit);
         form.setWindowBlur(windowBlur);
+
+        // Calculate time taken from server session or fallback to request param
+        Long examStartTime = (Long) session.getAttribute("examStartTime");
+        int elapsedSeconds = timeTakenSeconds;
+        if (examStartTime != null) {
+            elapsedSeconds = (int) ((System.currentTimeMillis() - examStartTime) / 1000);
+            session.removeAttribute("examStartTime");
+        }
+        form.setTimeTakenSeconds(elapsedSeconds);
 
         Map<Long, String> answers = new HashMap<>();
         for (Map.Entry<String, String> entry : allParams.entrySet()) {

@@ -54,6 +54,7 @@
                             <th>Roll No</th>
                             <th>Score</th>
                             <th>Result</th>
+                            <th>Time Taken</th>
                             <th>Trust Score</th>
                             <th>Integrity Status</th>
                             <th>Submitted At</th>
@@ -74,6 +75,10 @@
                             <td>
                                 <span th:if="${r.passed}" class="badge badge-success">PASSED</span>
                                 <span th:unless="${r.passed}" class="badge badge-danger">FAILED</span>
+                            </td>
+                            <td>
+                                <span th:text="${r.formattedTimeTaken}">5m 30s</span>
+                                <span th:if="${r.overtime}" class="badge badge-danger" style="margin-left: 0.25rem; font-size: 0.7rem;">OVERTIME</span>
                             </td>
                             <td>
                                 <strong th:text="${r.trustScore} + '%'">95%</strong>
