@@ -363,6 +363,20 @@ class OnlineexamApplicationTests {
         mockMvc.perform(get("/result/999999/pdf"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void testAdminQuestionBankMetricsAndTopicAnalytics() throws Exception {
+        mockMvc.perform(get("/admin/questions"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("questions"))
+                .andExpect(model().attributeExists("totalQuestions"))
+                .andExpect(model().attributeExists("totalMarks"))
+                .andExpect(model().attributeExists("topics"))
+                .andExpect(model().attributeExists("topicCounts"))
+                .andExpect(model().attribute("totalQuestions", org.hamcrest.Matchers.greaterThanOrEqualTo(6)))
+                .andExpect(model().attribute("totalMarks", org.hamcrest.Matchers.greaterThanOrEqualTo(6)));
+    }
 }
+
 
 

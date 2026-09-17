@@ -581,6 +581,34 @@ body {
     transition: width 0.3s ease;
 }
 
+/* Responsive Grid System */
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+.grid-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+}
+
+.topic-pill {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.topic-pill.active-pill {
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+}
+
 /* Print Styles for Audit Reports */
 @media print {
     .navbar, .btn, #startModal, #toastContainer {
