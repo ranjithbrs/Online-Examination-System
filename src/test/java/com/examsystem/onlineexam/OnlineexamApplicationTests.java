@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -400,7 +402,66 @@ class OnlineexamApplicationTests {
                     assertTrue(content.contains("Java Fundamentals"));
                 });
     }
+
+    @Test
+    void testImportQuestionsJson() throws Exception {
+        int initialCount = examService.getAllQuestions().size();
+        String jsonPayload = """
+            [
+                {
+                    "questionText": "What is Docker?",
+                    "optionA": "A containerization platform",
+                    "optionB": "A relational database",
+                    "optionC": "A text editor",
+                    "optionD": "A compiler",
+                    "correctOption": "A",
+                    "category": "DevOps",
+                    "marks": 2,
+                    "explanation": "Docker automates application deployment in lightweight containers."
+                }
+            ]
+            """;
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "questions.json", "application/json", jsonPayload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/admin/questions/import").file(file))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/questions"))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        assertEquals(initialCount + 1, examService.getAllQuestions().size());
+    }
+
+    @Test
+    void testImportQuestionsCsv() throws Exception {
+        int initialCount = examService.getAllQuestions().size();
+        String csvPayload = "\"ID\",\"Category\",\"Marks\",\"Question\",\"Option A\",\"Option B\",\"Option C\",\"Option D\",\"Correct Option\",\"Explanation\"\n"
+                + "\"\",\"Cloud Computing\",\"2\",\"What is AWS S3?\",\"Simple Storage Service\",\"A relational DB\",\"A load balancer\",\"An OS\",\"A\",\"AWS S3 provides object storage.\"\n";
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "questions.csv", "text/csv", csvPayload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/admin/questions/import").file(file))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/questions"))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        assertEquals(initialCount + 1, examService.getAllQuestions().size());
+    }
+
+    @Test
+    void testImportQuestionsInvalidFormat() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "invalid.txt", "text/plain", "Random text".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/admin/questions/import").file(file))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/questions"))
+                .andExpect(flash().attributeExists("errorMessage"));
+    }
 }
+
 
 
 
