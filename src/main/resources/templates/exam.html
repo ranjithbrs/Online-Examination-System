@@ -74,24 +74,9 @@
                     </h3>
 
                     <div class="options-list">
-                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
-                            <input type="radio" th:name="'q_' + ${q.id}" value="A" onchange="updatePalette('[[${q.id}]]')">
-                            <span class="option-label" th:text="'A) ' + ${q.optionA}">Option A</span>
-                        </label>
-
-                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
-                            <input type="radio" th:name="'q_' + ${q.id}" value="B" onchange="updatePalette('[[${q.id}]]')">
-                            <span class="option-label" th:text="'B) ' + ${q.optionB}">Option B</span>
-                        </label>
-
-                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
-                            <input type="radio" th:name="'q_' + ${q.id}" value="C" onchange="updatePalette('[[${q.id}]]')">
-                            <span class="option-label" th:text="'C) ' + ${q.optionC}">Option C</span>
-                        </label>
-
-                        <label class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
-                            <input type="radio" th:name="'q_' + ${q.id}" value="D" onchange="updatePalette('[[${q.id}]]')">
-                            <span class="option-label" th:text="'D) ' + ${q.optionD}">Option D</span>
+                        <label th:each="opt : ${q.options}" class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
+                            <input type="radio" th:name="'q_' + ${q.id}" th:value="${opt.value}" onchange="updatePalette('[[${q.id}]]')">
+                            <span class="option-label" th:text="${opt.label} + ') ' + ${opt.text}">Option Text</span>
                         </label>
                     </div>
 

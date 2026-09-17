@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.util.Collections;
+
 @Service
 public class ExamService {
 
@@ -154,6 +156,33 @@ public class ExamService {
             reviews.add(new QuestionReviewDto(q, ans != null ? ans : "Not Answered", isCorrect));
         }
         return reviews;
+    }
+
+    public List<com.examsystem.onlineexam.dto.QuestionDisplayDto> getRandomizedQuestions() {
+        List<Question> questions = new ArrayList<>(questionRepository.findAll());
+        Collections.shuffle(questions);
+
+        List<com.examsystem.onlineexam.dto.QuestionDisplayDto> displayList = new ArrayList<>();
+        String[] labels = {"A", "B", "C", "D"};
+
+        for (Question q : questions) {
+            List<Map.Entry<String, String>> rawOptions = new ArrayList<>();
+            rawOptions.add(Map.entry("A", q.getOptionA()));
+            rawOptions.add(Map.entry("B", q.getOptionB()));
+            rawOptions.add(Map.entry("C", q.getOptionC()));
+            rawOptions.add(Map.entry("D", q.getOptionD()));
+            Collections.shuffle(rawOptions);
+
+            List<com.examsystem.onlineexam.dto.QuestionDisplayDto.OptionDisplay> options = new ArrayList<>();
+            for (int i = 0; i < rawOptions.size(); i++) {
+                Map.Entry<String, String> entry = rawOptions.get(i);
+                options.add(new com.examsystem.onlineexam.dto.QuestionDisplayDto.OptionDisplay(labels[i], entry.getKey(), entry.getValue()));
+            }
+
+            displayList.add(new com.examsystem.onlineexam.dto.QuestionDisplayDto(q.getId(), q.getQuestionText(), q.getCategory(), q.getMarks(), options));
+        }
+
+        return displayList;
     }
 
     public Question getQuestionById(Long id) {
