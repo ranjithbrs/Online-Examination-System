@@ -95,6 +95,9 @@
                                 <a th:href="@{'/result/' + ${r.id}}" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.85rem;">
                                     Inspect Report
                                 </a>
+                                <a th:href="@{'/result/' + ${r.id} + '/pdf'}" class="btn btn-secondary" style="padding: 0.4rem 0.65rem; font-size: 0.85rem; margin-left: 0.35rem;" title="Download PDF Report">
+                                    📥 PDF
+                                </a>
                             </td>
                         </tr>
                     </tbody>

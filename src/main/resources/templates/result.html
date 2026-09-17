@@ -57,6 +57,12 @@
         <p style="font-size: 1.25rem; font-weight: 600; color: var(--text-secondary);">
             Overall Score: <span th:text="${result.percentage}">83.3</span>%
         </p>
+
+        <div style="margin-top: 1.25rem;">
+            <a th:href="@{'/result/' + ${result.id} + '/pdf'}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.4rem; font-size: 0.95rem;">
+                📄 Download Official PDF Certificate & Report
+            </a>
+        </div>
     </div>
 
     <!-- Integrity & Proctoring Analytics Dashboard -->
@@ -154,9 +160,12 @@
         </div>
     </div>
 
-    <div style="display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 3rem;">
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 3rem; flex-wrap: wrap;">
         <a href="/" class="btn btn-primary">Start New Exam</a>
-        <button onclick="window.print()" class="btn btn-secondary">🖨️ Print / Export PDF Report</button>
+        <a th:href="@{'/result/' + ${result.id} + '/pdf'}" class="btn btn-success" style="background: var(--color-success); border-color: var(--color-success); color: white; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+            📥 Download Official PDF Report
+        </a>
+        <button onclick="window.print()" class="btn btn-secondary">🖨️ Print View</button>
         <a href="/history" class="btn btn-secondary">View All Exam History</a>
     </div>
 </div>

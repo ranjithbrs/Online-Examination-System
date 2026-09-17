@@ -6,7 +6,11 @@ import com.examsystem.onlineexam.model.ExamResult;
 import com.examsystem.onlineexam.model.Question;
 import com.examsystem.onlineexam.model.ViolationLog;
 import com.examsystem.onlineexam.service.ExamService;
+import com.examsystem.onlineexam.service.PdfExportService;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +23,11 @@ import java.util.Map;
 public class HomeController {
 
     private final ExamService examService;
+    private final PdfExportService pdfExportService;
 
-    public HomeController(ExamService examService) {
+    public HomeController(ExamService examService, PdfExportService pdfExportService) {
         this.examService = examService;
+        this.pdfExportService = pdfExportService;
     }
 
     @GetMapping("/")
@@ -180,6 +186,24 @@ public class HomeController {
         model.addAttribute("violationLogs", violationLogs);
 
         return "result";
+    }
+
+    @GetMapping("/result/{id}/pdf")
+    public ResponseEntity<byte[]> downloadResultPdf(@PathVariable Long id) {
+        ExamResult result = examService.getExamResult(id);
+        if (result == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        byte[] pdfBytes = pdfExportService.generateExamReportPdf(result);
+        String cleanRoll = result.getRollNumber() != null ? result.getRollNumber().replaceAll("[^a-zA-Z0-9_-]", "") : "CANDIDATE";
+        String filename = "Exam_Report_" + cleanRoll + "_" + id + ".pdf";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .contentLength(pdfBytes.length)
+                .body(pdfBytes);
     }
 
     @GetMapping("/history")
