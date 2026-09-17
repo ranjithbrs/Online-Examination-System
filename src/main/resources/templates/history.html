@@ -73,8 +73,9 @@
                                 <span th:text="'(' + ${r.percentage} + '%)'" style="font-size: 0.85rem; color: var(--text-secondary);">83.3%</span>
                             </td>
                             <td>
-                                <span th:if="${r.passed}" class="badge badge-success">PASSED</span>
-                                <span th:unless="${r.passed}" class="badge badge-danger">FAILED</span>
+                                <span th:if="${r.disqualified}" class="badge badge-danger" style="background: #dc2626; color: white;">DISQUALIFIED</span>
+                                <span th:if="${!r.disqualified and r.passed}" class="badge badge-success">PASSED</span>
+                                <span th:if="${!r.disqualified and !r.passed}" class="badge badge-danger">FAILED</span>
                             </td>
                             <td>
                                 <span th:text="${r.formattedTimeTaken}">5m 30s</span>
@@ -84,9 +85,10 @@
                                 <strong th:text="${r.trustScore} + '%'">95%</strong>
                             </td>
                             <td>
-                                <span th:if="${r.trustScore >= 85}" class="badge badge-success" th:text="${r.integrityStatus}">High Integrity</span>
-                                <span th:if="${r.trustScore >= 60 and r.trustScore < 85}" class="badge badge-warning" th:text="${r.integrityStatus}">Moderate Warning</span>
-                                <span th:if="${r.trustScore < 60}" class="badge badge-danger" th:text="${r.integrityStatus}">High Risk</span>
+                                <span th:if="${r.disqualified}" class="badge badge-danger" style="background: #991b1b; color: white;">DISQUALIFIED</span>
+                                <span th:if="${!r.disqualified and r.trustScore >= 85}" class="badge badge-success" th:text="${r.integrityStatus}">High Integrity</span>
+                                <span th:if="${!r.disqualified and r.trustScore >= 60 and r.trustScore < 85}" class="badge badge-warning" th:text="${r.integrityStatus}">Moderate Warning</span>
+                                <span th:if="${!r.disqualified and r.trustScore < 60}" class="badge badge-danger" th:text="${r.integrityStatus}">High Risk</span>
                             </td>
                             <td th:text="${#temporals.format(r.submittedAt, 'yyyy-MM-dd HH:mm')}">Date</td>
                             <td>

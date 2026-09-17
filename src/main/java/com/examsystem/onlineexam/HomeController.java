@@ -137,6 +137,11 @@ public class HomeController {
         }
         form.setTimeTakenSeconds(elapsedSeconds);
 
+        if ("true".equalsIgnoreCase(allParams.get("disqualified"))) {
+            form.setDisqualified(true);
+            form.setDisqualificationReason(allParams.getOrDefault("disqualificationReason", "Exceeded security strike threshold"));
+        }
+
         Map<Long, String> answers = new HashMap<>();
         for (Map.Entry<String, String> entry : allParams.entrySet()) {
             if (entry.getKey().startsWith("q_")) {
