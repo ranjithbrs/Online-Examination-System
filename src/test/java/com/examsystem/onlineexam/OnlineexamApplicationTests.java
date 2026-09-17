@@ -22,6 +22,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -234,5 +235,38 @@ class OnlineexamApplicationTests {
         List<ViolationLog> logs = examService.getViolationLogs(overtimeResult.getId());
         boolean hasOvertimeLog = logs.stream().anyMatch(l -> "OVERTIME_SUBMISSION".equals(l.getViolationType()));
         assertTrue(hasOvertimeLog, "Violation log must record OVERTIME_SUBMISSION");
+    }
+
+    @Test
+    void testExamDraftAutoSaveAndRetrieval() throws Exception {
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+
+        String draftJson = """
+            {
+                "answers": { "1": "A", "2": "B" },
+                "tabSwitch": 1,
+                "copyCount": 0,
+                "rightClick": 1,
+                "fullscreenExit": 0,
+                "windowBlur": 0
+            }
+            """;
+
+        mockMvc.perform(post("/api/v1/exam/draft")
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(draftJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SAVED"))
+                .andExpect(jsonPath("$.savedAnswersCount").value(2));
+
+        mockMvc.perform(get("/api/v1/exam/draft")
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tabSwitch").value(1))
+                .andExpect(jsonPath("$.rightClick").value(1))
+                .andExpect(jsonPath("$.answers.1").value("A"))
+                .andExpect(jsonPath("$.answers.2").value("B"));
     }
 }

@@ -60,4 +60,29 @@ public class ExamApiController {
         }
         return ResponseEntity.ok(result);
     }
+
+    @PostMapping("/exam/draft")
+    public ResponseEntity<Map<String, Object>> saveDraft(
+            @RequestBody com.examsystem.onlineexam.dto.ExamDraftDto draft,
+            jakarta.servlet.http.HttpSession session) {
+        if (draft != null) {
+            draft.setLastSavedTimestamp(System.currentTimeMillis());
+            session.setAttribute("examDraft", draft);
+            return ResponseEntity.ok(Map.of(
+                "status", "SAVED",
+                "timestamp", draft.getLastSavedTimestamp(),
+                "savedAnswersCount", draft.getAnswers().size()
+            ));
+        }
+        return ResponseEntity.badRequest().body(Map.of("status", "ERROR", "message", "Empty draft"));
+    }
+
+    @GetMapping("/exam/draft")
+    public ResponseEntity<com.examsystem.onlineexam.dto.ExamDraftDto> getDraft(jakarta.servlet.http.HttpSession session) {
+        com.examsystem.onlineexam.dto.ExamDraftDto draft = (com.examsystem.onlineexam.dto.ExamDraftDto) session.getAttribute("examDraft");
+        if (draft == null) {
+            return ResponseEntity.ok(new com.examsystem.onlineexam.dto.ExamDraftDto());
+        }
+        return ResponseEntity.ok(draft);
+    }
 }
