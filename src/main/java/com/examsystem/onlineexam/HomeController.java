@@ -59,6 +59,7 @@ public class HomeController {
         session.setAttribute("rollNumber", rollNumber);
         session.removeAttribute("sessionQuestions");
         session.removeAttribute("examStartTime");
+        session.removeAttribute("examDraft");
 
         return "redirect:/exam";
     }
@@ -87,6 +88,12 @@ public class HomeController {
         if (session.getAttribute("examStartTime") == null) {
             session.setAttribute("examStartTime", System.currentTimeMillis());
         }
+
+        // Draft Auto-Save Recovery
+        com.examsystem.onlineexam.dto.ExamDraftDto draft = 
+                (com.examsystem.onlineexam.dto.ExamDraftDto) session.getAttribute("examDraft");
+        model.addAttribute("draftAnswers", draft != null ? draft.getAnswers() : new HashMap<>());
+        model.addAttribute("draft", draft != null ? draft : new com.examsystem.onlineexam.dto.ExamDraftDto());
 
         model.addAttribute("studentName", studentName);
         model.addAttribute("studentEmail", studentEmail);
@@ -147,6 +154,7 @@ public class HomeController {
         // Store answers in session for rendering detail review
         session.setAttribute("userAnswers_" + savedResult.getId(), answers);
         session.removeAttribute("sessionQuestions");
+        session.removeAttribute("examDraft");
 
         return "redirect:/result/" + savedResult.getId();
     }

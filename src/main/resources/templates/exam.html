@@ -35,6 +35,11 @@
             <div style="font-size: 0.8rem; color: var(--text-secondary);" th:text="${rollNumber}">Roll No</div>
         </div>
 
+        <div id="saveStatusIndicator" style="font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.4rem;">
+            <span id="saveStatusDot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#10b981;"></span>
+            <span id="saveStatusText">Draft Saved</span>
+        </div>
+
         <div id="timer" class="timer-badge">
             <span style="font-size: 1rem; color: var(--text-muted);">TIME</span>
             <span id="timeDisplay">10:00</span>
@@ -76,7 +81,9 @@
 
                     <div class="options-list">
                         <label th:each="opt : ${q.options}" class="option-item" onclick="onOptionSelect(this, '[[${q.id}]]')">
-                            <input type="radio" th:name="'q_' + ${q.id}" th:value="${opt.value}" onchange="updatePalette('[[${q.id}]]')">
+                            <input type="radio" th:name="'q_' + ${q.id}" th:value="${opt.value}" 
+                                   th:checked="${draftAnswers != null and draftAnswers.get(q.id) == opt.value}"
+                                   onchange="onAnswerChange('[[${q.id}]]')">
                             <span class="option-label" th:text="${opt.label} + ') ' + ${opt.text}">Option Text</span>
                         </label>
                     </div>
@@ -120,6 +127,7 @@
                     <div class="palette-grid">
                         <button type="button" th:each="q, iterStat : ${questions}" 
                                 class="palette-btn" 
+                                th:classappend="${draftAnswers != null and draftAnswers.containsKey(q.id)} ? 'answered' : ''"
                                 th:id="'pbtn-' + ${q.id}"
                                 th:onclick="'scrollToQuestion(' + ${q.id} + ')'"
                                 th:text="${iterStat.count}">
@@ -160,7 +168,11 @@ function initializeExamSession() {
         document.documentElement.requestFullscreen().catch(() => {});
     }
 
+    updateProgress();
     startTimer();
+
+    // Background auto-save every 15 seconds
+    setInterval(sendDraftPayload, 15000);
 }
 
 function startTimer() {
@@ -266,6 +278,64 @@ function updatePalette(qId) {
     updateProgress();
 }
 
+function onAnswerChange(qId) {
+    updatePalette(qId);
+    triggerAutoSave();
+}
+
+let autoSaveTimeout = null;
+function triggerAutoSave() {
+    const dot = document.getElementById("saveStatusDot");
+    const text = document.getElementById("saveStatusText");
+    if (dot && text) {
+        dot.style.backgroundColor = "#f59e0b";
+        text.innerText = "Saving...";
+    }
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(sendDraftPayload, 600);
+}
+
+function sendDraftPayload() {
+    if (examSubmitted) return;
+    const answers = {};
+    const form = document.getElementById("examForm");
+    if (!form) return;
+    const formData = new FormData(form);
+    for (let [key, val] of formData.entries()) {
+        if (key.startsWith("q_")) {
+            const qId = key.substring(2);
+            answers[qId] = val;
+        }
+    }
+
+    const payload = {
+        answers: answers,
+        tabSwitch: tabSwitchCount,
+        copyCount: copyCount,
+        rightClick: rightClickCount,
+        fullscreenExit: fullscreenExitCount,
+        windowBlur: windowBlurCount
+    };
+
+    fetch('/api/v1/exam/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(res => {
+        if (res.ok) {
+            const dot = document.getElementById("saveStatusDot");
+            const text = document.getElementById("saveStatusText");
+            if (dot && text) {
+                dot.style.backgroundColor = "#10b981";
+                text.innerText = "Draft Saved";
+            }
+        }
+    }).catch(() => {
+        const text = document.getElementById("saveStatusText");
+        if (text) text.innerText = "Local (Offline)";
+    });
+}
+
 function clearAnswer(qId) {
     const radios = document.getElementsByName(`q_${qId}`);
     for (let r of radios) {
@@ -276,6 +346,7 @@ function clearAnswer(qId) {
         paletteBtn.classList.remove("answered");
     }
     updateProgress();
+    triggerAutoSave();
 }
 
 function updateProgress() {
