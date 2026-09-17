@@ -24,12 +24,20 @@
     <!-- Result Hero Summary -->
     <div class="result-hero">
         <div style="display: inline-block; margin-bottom: 0.75rem;">
-            <span th:if="${result.passed}" class="badge badge-success" style="font-size: 1rem; padding: 0.5rem 1.25rem;">
+            <span th:if="${result.disqualified}" class="badge badge-danger" style="font-size: 1.1rem; padding: 0.6rem 1.5rem; background: rgba(239, 68, 68, 0.25); border: 2px solid var(--color-danger);">
+                🚨 DISQUALIFIED (SESSION TERMINATED)
+            </span>
+            <span th:if="${!result.disqualified and result.passed}" class="badge badge-success" style="font-size: 1rem; padding: 0.5rem 1.25rem;">
                 PASSED EXAMINATION
             </span>
-            <span th:unless="${result.passed}" class="badge badge-danger" style="font-size: 1rem; padding: 0.5rem 1.25rem;">
+            <span th:if="${!result.disqualified and !result.passed}" class="badge badge-danger" style="font-size: 1rem; padding: 0.5rem 1.25rem;">
                 NEEDS IMPROVEMENT
             </span>
+        </div>
+
+        <div th:if="${result.disqualified}" style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(239, 68, 68, 0.15); border-left: 4px solid var(--color-danger); border-radius: var(--radius-sm); text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+            <strong style="color: var(--color-danger);">Disqualification Reason:</strong>
+            <span th:text="${result.disqualificationReason}" style="color: var(--text-primary); margin-left: 0.5rem;">Reason</span>
         </div>
 
         <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--text-primary);">

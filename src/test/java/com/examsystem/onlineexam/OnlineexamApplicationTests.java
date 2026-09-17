@@ -99,16 +99,16 @@ class OnlineexamApplicationTests {
         }
         form.setAnswers(answers);
 
-        form.setTabSwitch(4);        // 4 * 5 = 20 pts
+        form.setTabSwitch(2);        // 2 * 5 = 10 pts
         form.setCopyCount(3);        // 3 * 8 = 24 pts
-        form.setRightClick(2);       // 2 * 3 = 6 pts
-        form.setFullscreenExit(2);   // 2 * 10 = 20 pts
+        form.setRightClick(3);       // 3 * 3 = 9 pts
+        form.setFullscreenExit(1);   // 1 * 10 = 10 pts
         form.setWindowBlur(3);       // 3 * 4 = 12 pts
 
         ExamResult result = examService.evaluateAndSaveExam(form);
 
         assertNotNull(result.getId());
-        assertEquals(18, result.getTrustScore());
+        assertEquals(35, result.getTrustScore());
         assertEquals("High Risk / Flagged", result.getIntegrityStatus());
 
         List<ViolationLog> logs = examService.getViolationLogs(result.getId());
@@ -269,4 +269,51 @@ class OnlineexamApplicationTests {
                 .andExpect(jsonPath("$.answers.1").value("A"))
                 .andExpect(jsonPath("$.answers.2").value("B"));
     }
+
+    @Test
+    void testDisqualificationAndStrikeSystem() {
+        // Case 1: Disqualified by 3 fullscreen exits strike threshold
+        ExamSubmissionForm strikeForm = new ExamSubmissionForm();
+        strikeForm.setStudentName("Strike Candidate");
+        strikeForm.setStudentEmail("strike@test.com");
+        strikeForm.setRollNumber("STRIKE-001");
+        strikeForm.setFullscreenExit(3);
+        strikeForm.setTabSwitch(0);
+
+        // Give correct answers, candidate should still fail due to disqualification
+        List<Question> questions = examService.getAllQuestions();
+        Map<Long, String> answers = new HashMap<>();
+        for (Question q : questions) {
+            answers.put(q.getId(), q.getCorrectOption());
+        }
+        strikeForm.setAnswers(answers);
+
+        ExamResult strikeResult = examService.evaluateAndSaveExam(strikeForm);
+        assertTrue(strikeResult.isDisqualified(), "Should be disqualified after 3 fullscreen exits");
+        assertFalse(strikeResult.isPassed(), "Disqualified candidate must fail even with 100% correct answers");
+        assertEquals(0, strikeResult.getTrustScore(), "Disqualified candidate must have 0% trust score");
+        assertEquals("DISQUALIFIED", strikeResult.getIntegrityStatus());
+        assertNotNull(strikeResult.getDisqualificationReason());
+        assertTrue(strikeResult.getDisqualificationReason().contains("3+ strikes"));
+
+        List<ViolationLog> strikeLogs = examService.getViolationLogs(strikeResult.getId());
+        assertTrue(strikeLogs.stream().anyMatch(l -> "SECURITY_DISQUALIFICATION".equals(l.getViolationType())),
+                "Violation logs should contain SECURITY_DISQUALIFICATION");
+
+        // Case 2: Explicit client lockout disqualification (e.g. devtools opened)
+        ExamSubmissionForm lockoutForm = new ExamSubmissionForm();
+        lockoutForm.setStudentName("DevTools Cheater");
+        lockoutForm.setStudentEmail("cheater@test.com");
+        lockoutForm.setRollNumber("DEV-999");
+        lockoutForm.setDisqualified(true);
+        lockoutForm.setDisqualificationReason("Unauthorized Developer Tools / Console opened during exam session");
+
+        ExamResult lockoutResult = examService.evaluateAndSaveExam(lockoutForm);
+        assertTrue(lockoutResult.isDisqualified());
+        assertFalse(lockoutResult.isPassed());
+        assertEquals(0, lockoutResult.getTrustScore());
+        assertEquals("DISQUALIFIED", lockoutResult.getIntegrityStatus());
+        assertEquals("Unauthorized Developer Tools / Console opened during exam session", lockoutResult.getDisqualificationReason());
+    }
 }
+

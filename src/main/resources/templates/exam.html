@@ -61,6 +61,8 @@
         <input type="hidden" name="fullscreenExit" id="fullscreenField" value="0">
         <input type="hidden" name="windowBlur" id="blurField" value="0">
         <input type="hidden" name="timeTakenSeconds" id="timeTakenField" value="0">
+        <input type="hidden" name="disqualified" id="disqualifiedField" value="false">
+        <input type="hidden" name="disqualificationReason" id="disqualificationReasonField" value="">
 
         <div class="progress-bar-container">
             <div id="examProgressBar" class="progress-bar-fill"></div>
@@ -112,6 +114,10 @@
                         <div>Copy Attempts: <strong id="liveCopyCount" style="color: var(--text-primary);">0</strong></div>
                         <div>Right Clicks: <strong id="liveRightClickCount" style="color: var(--text-primary);">0</strong></div>
                         <div>Fullscreen Exits: <strong id="liveFullscreenCount" style="color: var(--text-primary);">0</strong></div>
+                        <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <span>Security Strikes:</span>
+                            <span id="strikeBadge" class="badge badge-success" style="font-size: 0.75rem;">0 / 3 Strikes</span>
+                        </div>
                     </div>
                 </div>
 
@@ -149,16 +155,77 @@
 <!-- Violation Toast Overlay Container -->
 <div id="toastContainer"></div>
 
+<!-- Disqualification Lockout Overlay -->
+<div id="disqualificationModal" class="modal-overlay" style="display: none; background: rgba(11, 15, 25, 0.97); z-index: 9999;">
+    <div class="modal-content" style="border: 2px solid var(--color-danger); max-width: 520px; text-align: center;">
+        <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨</div>
+        <h2 style="font-size: 1.6rem; color: var(--color-danger); margin-bottom: 0.5rem;">EXAMINATION TERMINATED</h2>
+        <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem;">Candidate Disqualified</h3>
+        <p id="disqualificationReasonText" style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+            You have accumulated 3 security strikes. In accordance with exam proctoring regulations, your session has been terminated.
+        </p>
+        <button type="button" onclick="beforeSubmitExam(); document.getElementById('examForm').submit();" class="btn btn-primary btn-block" style="background: var(--color-danger); border-color: var(--color-danger);">
+            Proceed to Incident Report &rarr;
+        </button>
+    </div>
+</div>
+
 <script th:inline="javascript">
 let tabSwitchCount = 0;
 let copyCount = 0;
 let rightClickCount = 0;
 let fullscreenExitCount = 0;
 let windowBlurCount = 0;
+let strikeCount = 0;
+const MAX_STRIKES = 3;
 
 let durationSeconds = 600; // 10 minutes default
 let timerInterval = null;
 let examSubmitted = false;
+
+function recordSecurityStrike(reason) {
+    if (examSubmitted) return;
+    strikeCount++;
+    const badge = document.getElementById("strikeBadge");
+    if (badge) {
+        badge.innerText = `${strikeCount} / ${MAX_STRIKES} Strikes`;
+        if (strikeCount === 1) {
+            badge.className = "badge badge-warning";
+        } else if (strikeCount >= 2) {
+            badge.className = "badge badge-danger";
+        }
+    }
+
+    if (strikeCount >= MAX_STRIKES) {
+        triggerDisqualification(reason || "Maximum allowed security violations (3 strikes) breached");
+    } else {
+        showToast(`🚨 STRIKE ${strikeCount}/${MAX_STRIKES}: ${reason}. Reaching 3 strikes will disqualify you!`);
+    }
+}
+
+function triggerDisqualification(reason) {
+    examSubmitted = true;
+    document.getElementById("disqualifiedField").value = "true";
+    document.getElementById("disqualificationReasonField").value = reason;
+    const reasonElem = document.getElementById("disqualificationReasonText");
+    if (reasonElem) {
+        reasonElem.innerText = `Reason: ${reason}. Your session has been terminated and flagged.`;
+    }
+
+    // Disable all inputs
+    const inputs = document.querySelectorAll("input[type=radio]");
+    inputs.forEach(i => i.disabled = true);
+
+    const modal = document.getElementById("disqualificationModal");
+    if (modal) {
+        modal.style.display = "flex";
+    }
+
+    setTimeout(() => {
+        beforeSubmitExam();
+        document.getElementById("examForm").submit();
+    }, 3500);
+}
 
 function initializeExamSession() {
     document.getElementById("startModal").style.display = "none";
@@ -206,7 +273,7 @@ document.addEventListener("visibilitychange", function() {
     if (document.hidden && !examSubmitted) {
         tabSwitchCount++;
         document.getElementById("liveTabCount").innerText = tabSwitchCount;
-        showToast("⚠️ Warning: Tab switch / Window hidden detected!");
+        recordSecurityStrike("Tab switch / Window hidden");
     }
 });
 
@@ -241,7 +308,7 @@ document.addEventListener("keydown", function(e) {
         e.preventDefault();
         copyCount++;
         document.getElementById("liveCopyCount").innerText = copyCount;
-        showToast("⚠️ Warning: Developer tools shortcut blocked!");
+        recordSecurityStrike("Developer tools inspection attempt");
     }
 });
 
@@ -249,9 +316,9 @@ document.addEventListener("fullscreenchange", function() {
     if (!document.fullscreenElement && !examSubmitted) {
         fullscreenExitCount++;
         document.getElementById("liveFullscreenCount").innerText = fullscreenExitCount;
-        showToast("🚨 Alert: You exited Fullscreen mode! Please remain in full screen.");
+        recordSecurityStrike("Exited secure full-screen mode");
         setTimeout(() => {
-            if (document.documentElement.requestFullscreen) {
+            if (document.documentElement.requestFullscreen && !examSubmitted) {
                 document.documentElement.requestFullscreen().catch(() => {});
             }
         }, 2000);

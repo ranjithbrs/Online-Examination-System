@@ -39,6 +39,9 @@ public class ExamSubmissionForm {
 
     private int timeTakenSeconds = 0;
 
+    private boolean disqualified = false;
+    private String disqualificationReason;
+
     // JSON string or comma-separated log of proctoring events
     private String violationLogsJson;
 
@@ -123,6 +126,22 @@ public class ExamSubmissionForm {
 
     public void setTimeTakenSeconds(int timeTakenSeconds) {
         this.timeTakenSeconds = timeTakenSeconds;
+    }
+
+    public boolean isDisqualified() {
+        return disqualified;
+    }
+
+    public void setDisqualified(boolean disqualified) {
+        this.disqualified = disqualified;
+    }
+
+    public String getDisqualificationReason() {
+        return disqualificationReason;
+    }
+
+    public void setDisqualificationReason(String disqualificationReason) {
+        this.disqualificationReason = disqualificationReason;
     }
 
     public String getViolationLogsJson() {

@@ -89,8 +89,29 @@ public class ExamService {
         }
         int trustScore = Math.max(0, 100 - riskScore);
 
+        // Disqualification Strike Rule: 3+ Fullscreen Exits OR 4+ Tab Switches OR explicit form disqualification
+        boolean isDisqualified = form.isDisqualified() 
+                || fullscreenExit >= 3 
+                || tabSwitch >= 4 
+                || (fullscreenExit >= 2 && tabSwitch >= 2);
+
+        String disqualificationReason = form.getDisqualificationReason();
+        if (isDisqualified && (disqualificationReason == null || disqualificationReason.isBlank())) {
+            if (fullscreenExit >= 3) {
+                disqualificationReason = "Exceeded maximum allowed full-screen exit strikes (3+ strikes)";
+            } else if (tabSwitch >= 4) {
+                disqualificationReason = "Exceeded maximum allowed tab/window switch strikes (4+ strikes)";
+            } else {
+                disqualificationReason = "Automatic disqualification due to excessive security violations";
+            }
+        }
+
         String integrityStatus;
-        if (trustScore >= 85) {
+        if (isDisqualified) {
+            trustScore = 0;
+            integrityStatus = "DISQUALIFIED";
+            passed = false;
+        } else if (trustScore >= 85) {
             integrityStatus = "High Integrity";
         } else if (trustScore >= 60) {
             integrityStatus = "Moderate Warning";
@@ -118,6 +139,9 @@ public class ExamService {
         result.setTimeTakenSeconds(timeTaken);
         result.setOvertime(isOvertime);
 
+        result.setDisqualified(isDisqualified);
+        result.setDisqualificationReason(disqualificationReason);
+
         result.setRiskScore(riskScore);
         result.setTrustScore(trustScore);
         result.setIntegrityStatus(integrityStatus);
@@ -127,12 +151,12 @@ public class ExamService {
         ExamResult savedResult = examResultRepository.save(result);
 
         // Record individual proctoring violation logs
-        createViolationLogs(savedResult.getId(), form);
+        createViolationLogs(savedResult.getId(), form, isDisqualified, disqualificationReason);
 
         return savedResult;
     }
 
-    private void createViolationLogs(Long resultId, ExamSubmissionForm form) {
+    private void createViolationLogs(Long resultId, ExamSubmissionForm form, boolean isDisqualified, String disqualificationReason) {
         LocalDateTime now = LocalDateTime.now();
         if (form.getTabSwitch() > 0) {
             violationLogRepository.save(new ViolationLog(resultId, "TAB_SWITCH", "Detected " + form.getTabSwitch() + " tab/browser switch event(s)", now));
@@ -152,6 +176,9 @@ public class ExamService {
         if (form.getTimeTakenSeconds() > 630) {
             int over = form.getTimeTakenSeconds() - 600;
             violationLogRepository.save(new ViolationLog(resultId, "OVERTIME_SUBMISSION", "Exam submitted overtime by " + (over / 60) + "m " + (over % 60) + "s", now));
+        }
+        if (isDisqualified) {
+            violationLogRepository.save(new ViolationLog(resultId, "SECURITY_DISQUALIFICATION", "Candidate disqualified: " + disqualificationReason, now));
         }
     }
 
