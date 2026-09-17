@@ -40,6 +40,9 @@ public class ExamResult {
     private int trustScore; // 0 - 100%
     private String integrityStatus; // "High Integrity (Normal)", "Moderate Warning", "High Risk / Flagged"
 
+    private int timeTakenSeconds;
+    private boolean overtime;
+
     private LocalDateTime submittedAt;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -193,6 +196,31 @@ public class ExamResult {
 
     public void setSubmittedAt(LocalDateTime submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public int getTimeTakenSeconds() {
+        return timeTakenSeconds;
+    }
+
+    public void setTimeTakenSeconds(int timeTakenSeconds) {
+        this.timeTakenSeconds = timeTakenSeconds;
+    }
+
+    public boolean isOvertime() {
+        return overtime;
+    }
+
+    public void setOvertime(boolean overtime) {
+        this.overtime = overtime;
+    }
+
+    public String getFormattedTimeTaken() {
+        if (timeTakenSeconds <= 0) {
+            return "N/A";
+        }
+        int mins = timeTakenSeconds / 60;
+        int secs = timeTakenSeconds % 60;
+        return String.format("%dm %02ds", mins, secs);
     }
 
     public Map<Long, String> getSelectedAnswers() {

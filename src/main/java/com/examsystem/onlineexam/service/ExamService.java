@@ -78,7 +78,15 @@ public class ExamService {
 
         int totalViolations = tabSwitch + copyCount + rightClick + fullscreenExit + windowBlur;
 
+        // Server-Side Timer & Overtime Validation (10 mins = 600s, 30s grace buffer)
+        int allowedSeconds = 600;
+        int timeTaken = form.getTimeTakenSeconds();
+        boolean isOvertime = timeTaken > (allowedSeconds + 30);
+
         int riskScore = (tabSwitch * 5) + (copyCount * 8) + (rightClick * 3) + (fullscreenExit * 10) + (windowBlur * 4);
+        if (isOvertime) {
+            riskScore += 25; // Overtime penalty
+        }
         int trustScore = Math.max(0, 100 - riskScore);
 
         String integrityStatus;
@@ -106,6 +114,9 @@ public class ExamService {
         result.setFullscreenExitCount(fullscreenExit);
         result.setWindowBlurCount(windowBlur);
         result.setTotalViolations(totalViolations);
+
+        result.setTimeTakenSeconds(timeTaken);
+        result.setOvertime(isOvertime);
 
         result.setRiskScore(riskScore);
         result.setTrustScore(trustScore);
@@ -137,6 +148,10 @@ public class ExamService {
         }
         if (form.getWindowBlur() > 0) {
             violationLogRepository.save(new ViolationLog(resultId, "WINDOW_BLUR", "Browser window lost focus " + form.getWindowBlur() + " time(s)", now));
+        }
+        if (form.getTimeTakenSeconds() > 630) {
+            int over = form.getTimeTakenSeconds() - 600;
+            violationLogRepository.save(new ViolationLog(resultId, "OVERTIME_SUBMISSION", "Exam submitted overtime by " + (over / 60) + "m " + (over % 60) + "s", now));
         }
     }
 

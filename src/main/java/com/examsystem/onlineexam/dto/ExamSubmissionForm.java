@@ -37,6 +37,8 @@ public class ExamSubmissionForm {
     @Min(value = 0, message = "Window blur count must be positive")
     private int windowBlur = 0;
 
+    private int timeTakenSeconds = 0;
+
     // JSON string or comma-separated log of proctoring events
     private String violationLogsJson;
 
@@ -113,6 +115,14 @@ public class ExamSubmissionForm {
 
     public void setWindowBlur(int windowBlur) {
         this.windowBlur = windowBlur;
+    }
+
+    public int getTimeTakenSeconds() {
+        return timeTakenSeconds;
+    }
+
+    public void setTimeTakenSeconds(int timeTakenSeconds) {
+        this.timeTakenSeconds = timeTakenSeconds;
     }
 
     public String getViolationLogsJson() {
