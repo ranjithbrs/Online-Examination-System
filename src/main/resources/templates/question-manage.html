@@ -21,6 +21,14 @@
 </nav>
 
 <div class="container">
+    <!-- Flash Notifications for Imports & Actions -->
+    <div th:if="${successMessage}" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: rgba(16, 185, 129, 0.2); border: 1px solid var(--color-success); border-radius: var(--radius-sm); color: #34d399; font-weight: 600;">
+        ✓ <span th:text="${successMessage}">Success message</span>
+    </div>
+    <div th:if="${errorMessage}" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: rgba(220, 38, 38, 0.2); border: 1px solid var(--color-danger); border-radius: var(--radius-sm); color: #f87171; font-weight: 600;">
+        ⚠ <span th:text="${errorMessage}">Error message</span>
+    </div>
+
     <div class="card-header" style="margin-bottom: 2rem;">
         <div>
             <h1 style="font-size: 2rem; font-weight: 800;">Question Bank Management</h1>
@@ -29,6 +37,9 @@
             </p>
         </div>
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button type="button" onclick="toggleImportModal()" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                📤 Import Questions
+            </button>
             <a href="/admin/questions/export/csv" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
                 📥 Export CSV
             </a>
@@ -130,6 +141,31 @@
             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                 <button type="button" class="btn btn-secondary" onclick="toggleCreateModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save Question</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bulk Import Modal/Card -->
+    <div id="importCard" class="card" style="display: none; margin-bottom: 2rem; border-color: var(--accent-primary);">
+        <div class="card-header">
+            <h2 class="card-title">Bulk Import Questions (CSV / JSON)</h2>
+            <button type="button" class="btn btn-secondary" onclick="toggleImportModal()" style="padding: 0.25rem 0.6rem;">✕ Close</button>
+        </div>
+
+        <form action="/admin/questions/import" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">Select Question Data File (.csv or .json)</label>
+                <input type="file" name="file" accept=".csv,.json" class="form-control" required style="padding: 0.5rem;">
+                <small style="color: var(--text-muted); display: block; margin-top: 0.5rem; line-height: 1.4;">
+                    Supported formats:
+                    <br>• <strong>CSV Format</strong>: Columns <code>ID, Category, Marks, Question, Option A, Option B, Option C, Option D, Correct Option, Explanation</code> (matching SecureExam CSV Export).
+                    <br>• <strong>JSON Format</strong>: JSON Array of question objects exported from SecureExam.
+                </small>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="toggleImportModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Upload & Import Questions</button>
             </div>
         </form>
     </div>
@@ -262,6 +298,16 @@ function editQuestion(btn) {
 
     card.style.display = "block";
     card.scrollIntoView({ behavior: 'smooth' });
+}
+
+function toggleImportModal() {
+    const card = document.getElementById("importCard");
+    if (card.style.display === "none") {
+        card.style.display = "block";
+        card.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        card.style.display = "none";
+    }
 }
 
 let currentTopic = 'ALL';

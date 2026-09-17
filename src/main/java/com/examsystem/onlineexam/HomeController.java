@@ -5,6 +5,7 @@ import com.examsystem.onlineexam.dto.QuestionReviewDto;
 import com.examsystem.onlineexam.model.ExamResult;
 import com.examsystem.onlineexam.model.Question;
 import com.examsystem.onlineexam.model.ViolationLog;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.examsystem.onlineexam.service.ExamService;
 import com.examsystem.onlineexam.service.PdfExportService;
@@ -15,7 +16,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -309,5 +316,117 @@ public class HomeController {
     private String escapeCsv(String input) {
         if (input == null) return "";
         return input.replace("\"", "\"\"");
+    }
+
+    @PostMapping("/admin/questions/import")
+    public String importQuestions(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file == null || file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a valid CSV or JSON file to import.");
+            return "redirect:/admin/questions";
+        }
+
+        String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase() : "";
+        int importedCount = 0;
+
+        try {
+            if (originalFilename.endsWith(".json")) {
+                List<Question> questions = objectMapper.readValue(file.getInputStream(), new TypeReference<List<Question>>() {});
+                if (questions != null) {
+                    for (Question q : questions) {
+                        if (q.getQuestionText() != null && !q.getQuestionText().isBlank()) {
+                            q.setId(null);
+                            if (q.getMarks() <= 0) q.setMarks(1);
+                            if (q.getCategory() == null || q.getCategory().isBlank()) q.setCategory("General");
+                            if (q.getCorrectOption() == null || q.getCorrectOption().isBlank()) q.setCorrectOption("A");
+                            examService.saveQuestion(q);
+                            importedCount++;
+                        }
+                    }
+                }
+            } else if (originalFilename.endsWith(".csv")) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    boolean isFirstLine = true;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.isBlank()) continue;
+                        if (isFirstLine) {
+                            isFirstLine = false;
+                            if (line.toLowerCase().contains("question") || line.toLowerCase().contains("category")) {
+                                continue;
+                            }
+                        }
+
+                        List<String> tokens = parseCsvLine(line);
+                        if (tokens.size() >= 9) {
+                            String category = tokens.size() > 1 && !tokens.get(1).isBlank() ? tokens.get(1) : "General";
+                            int marks = 1;
+                            try {
+                                marks = Integer.parseInt(tokens.get(2).trim());
+                            } catch (NumberFormatException ignored) {}
+                            String questionText = tokens.get(3);
+                            String optA = tokens.get(4);
+                            String optB = tokens.get(5);
+                            String optC = tokens.get(6);
+                            String optD = tokens.get(7);
+                            String correctOption = tokens.get(8).trim().toUpperCase();
+                            String explanation = tokens.size() > 9 ? tokens.get(9) : "";
+
+                            if (!questionText.isBlank()) {
+                                Question q = new Question();
+                                q.setCategory(category);
+                                q.setMarks(marks > 0 ? marks : 1);
+                                q.setQuestionText(questionText);
+                                q.setOptionA(optA);
+                                q.setOptionB(optB);
+                                q.setOptionC(optC);
+                                q.setOptionD(optD);
+                                q.setCorrectOption(correctOption.matches("[A-D]") ? correctOption : "A");
+                                q.setExplanation(explanation);
+
+                                examService.saveQuestion(q);
+                                importedCount++;
+                            }
+                        }
+                    }
+                }
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Unsupported file type. Please upload a .csv or .json file.");
+                return "redirect:/admin/questions";
+            }
+
+            if (importedCount > 0) {
+                redirectAttributes.addFlashAttribute("successMessage", "Successfully imported " + importedCount + " question(s) into the bank!");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "No valid questions were found in the uploaded file.");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to import questions: " + e.getMessage());
+        }
+
+        return "redirect:/admin/questions";
+    }
+
+    private List<String> parseCsvLine(String line) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '\"') {
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '\"') {
+                    sb.append('\"');
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c == ',' && !inQuotes) {
+                tokens.add(sb.toString().trim());
+                sb.setLength(0);
+            } else {
+                sb.append(c);
+            }
+        }
+        tokens.add(sb.toString().trim());
+        return tokens;
     }
 }
