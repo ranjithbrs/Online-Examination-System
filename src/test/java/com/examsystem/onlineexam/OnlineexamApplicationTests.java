@@ -8,10 +8,12 @@ import com.examsystem.onlineexam.model.ViolationLog;
 import com.examsystem.onlineexam.repository.ExamResultRepository;
 import com.examsystem.onlineexam.repository.QuestionRepository;
 import com.examsystem.onlineexam.service.ExamService;
+import com.examsystem.onlineexam.service.PdfExportService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +25,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -33,6 +34,9 @@ class OnlineexamApplicationTests {
 
     @Autowired
     private ExamService examService;
+
+    @Autowired
+    private PdfExportService pdfExportService;
 
     @Autowired
     private QuestionRepository questionRepository;
@@ -315,5 +319,50 @@ class OnlineexamApplicationTests {
         assertEquals("DISQUALIFIED", lockoutResult.getIntegrityStatus());
         assertEquals("Unauthorized Developer Tools / Console opened during exam session", lockoutResult.getDisqualificationReason());
     }
+
+    @Test
+    void testPdfReportGeneration() {
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("PDF Candidate");
+        form.setStudentEmail("pdf@example.com");
+        form.setRollNumber("PDF-101");
+        form.setTimeTakenSeconds(250);
+
+        ExamResult result = examService.evaluateAndSaveExam(form);
+        assertNotNull(result.getId());
+
+        byte[] pdfBytes = pdfExportService.generateExamReportPdf(result);
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 500, "PDF document should contain bytes");
+
+        // Verify PDF Header Magic Number (%PDF-)
+        String pdfHeader = new String(pdfBytes, 0, 5);
+        assertEquals("%PDF-", pdfHeader, "Generated file must be a valid PDF format");
+    }
+
+    @Test
+    void testPdfDownloadEndpoint() throws Exception {
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("Endpoint Tester");
+        form.setStudentEmail("endpoint@example.com");
+        form.setRollNumber("END-202");
+
+        ExamResult result = examService.evaluateAndSaveExam(form);
+
+        mockMvc.perform(get("/result/" + result.getId() + "/pdf"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+                .andExpect(header().exists(HttpHeaders.CONTENT_DISPOSITION))
+                .andExpect(resultMatcher -> {
+                    byte[] content = resultMatcher.getResponse().getContentAsByteArray();
+                    assertTrue(content.length > 500);
+                    assertEquals("%PDF-", new String(content, 0, 5));
+                });
+
+        // 404 for non-existent result ID
+        mockMvc.perform(get("/result/999999/pdf"))
+                .andExpect(status().isNotFound());
+    }
 }
+
 
