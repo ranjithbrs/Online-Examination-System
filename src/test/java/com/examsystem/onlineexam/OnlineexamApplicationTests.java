@@ -108,4 +108,19 @@ class OnlineexamApplicationTests {
         List<ViolationLog> logs = examService.getViolationLogs(result.getId());
         assertFalse(logs.isEmpty(), "Violation logs should be persisted");
     }
+
+    @Test
+    void testRandomizedQuestionsGeneration() {
+        List<com.examsystem.onlineexam.dto.QuestionDisplayDto> randomized = examService.getRandomizedQuestions();
+        assertFalse(randomized.isEmpty());
+        assertEquals(examService.getAllQuestions().size(), randomized.size());
+
+        for (com.examsystem.onlineexam.dto.QuestionDisplayDto q : randomized) {
+            assertEquals(4, q.getOptions().size());
+            List<String> labels = q.getOptions().stream().map(com.examsystem.onlineexam.dto.QuestionDisplayDto.OptionDisplay::getLabel).toList();
+            List<String> values = q.getOptions().stream().map(com.examsystem.onlineexam.dto.QuestionDisplayDto.OptionDisplay::getValue).sorted().toList();
+            assertEquals(List.of("A", "B", "C", "D"), labels);
+            assertEquals(List.of("A", "B", "C", "D"), values);
+        }
+    }
 }

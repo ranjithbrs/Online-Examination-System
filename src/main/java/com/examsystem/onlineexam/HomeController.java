@@ -51,6 +51,7 @@ public class HomeController {
         session.setAttribute("studentName", studentName);
         session.setAttribute("studentEmail", studentEmail);
         session.setAttribute("rollNumber", rollNumber);
+        session.removeAttribute("sessionQuestions");
 
         return "redirect:/exam";
     }
@@ -67,7 +68,13 @@ public class HomeController {
             rollNumber = "REG-" + (System.currentTimeMillis() % 10000);
         }
 
-        List<Question> questions = examService.getAllQuestions();
+        @SuppressWarnings("unchecked")
+        List<com.examsystem.onlineexam.dto.QuestionDisplayDto> questions = 
+                (List<com.examsystem.onlineexam.dto.QuestionDisplayDto>) session.getAttribute("sessionQuestions");
+        if (questions == null || questions.isEmpty()) {
+            questions = examService.getRandomizedQuestions();
+            session.setAttribute("sessionQuestions", questions);
+        }
 
         model.addAttribute("studentName", studentName);
         model.addAttribute("studentEmail", studentEmail);
@@ -117,6 +124,7 @@ public class HomeController {
 
         // Store answers in session for rendering detail review
         session.setAttribute("userAnswers_" + savedResult.getId(), answers);
+        session.removeAttribute("sessionQuestions");
 
         return "redirect:/result/" + savedResult.getId();
     }
