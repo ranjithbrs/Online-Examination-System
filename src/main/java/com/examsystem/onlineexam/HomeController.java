@@ -5,6 +5,7 @@ import com.examsystem.onlineexam.dto.QuestionReviewDto;
 import com.examsystem.onlineexam.model.ExamResult;
 import com.examsystem.onlineexam.model.Question;
 import com.examsystem.onlineexam.model.ViolationLog;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.examsystem.onlineexam.service.ExamService;
 import com.examsystem.onlineexam.service.PdfExportService;
 import jakarta.servlet.http.HttpSession;
@@ -24,10 +25,12 @@ public class HomeController {
 
     private final ExamService examService;
     private final PdfExportService pdfExportService;
+    private final ObjectMapper objectMapper;
 
-    public HomeController(ExamService examService, PdfExportService pdfExportService) {
+    public HomeController(ExamService examService, PdfExportService pdfExportService, ObjectMapper objectMapper) {
         this.examService = examService;
         this.pdfExportService = pdfExportService;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/")
@@ -262,4 +265,49 @@ public class HomeController {
         examService.deleteQuestion(id);
         return "redirect:/admin/questions";
     }
-}
+
+    @GetMapping("/admin/questions/export/json")
+    public ResponseEntity<byte[]> exportQuestionsJson() throws Exception {
+        List<Question> questions = examService.getAllQuestions();
+        byte[] jsonBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(questions);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Question_Bank_Export.json\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .contentLength(jsonBytes.length)
+                .body(jsonBytes);
+    }
+
+    @GetMapping("/admin/questions/export/csv")
+    public ResponseEntity<byte[]> exportQuestionsCsv() {
+        List<Question> questions = examService.getAllQuestions();
+        StringBuilder csv = new StringBuilder();
+        csv.append("\"ID\",\"Category\",\"Marks\",\"Question\",\"Option A\",\"Option B\",\"Option C\",\"Option D\",\"Correct Option\",\"Explanation\"\n");
+
+        for (Question q : questions) {
+            csv.append("\"").append(q.getId()).append("\",");
+            csv.append("\"").append(escapeCsv(q.getCategory())).append("\",");
+            csv.append("\"").append(q.getMarks()).append("\",");
+            csv.append("\"").append(escapeCsv(q.getQuestionText())).append("\",");
+            csv.append("\"").append(escapeCsv(q.getOptionA())).append("\",");
+            csv.append("\"").append(escapeCsv(q.getOptionB())).append("\",");
+            csv.append("\"").append(escapeCsv(q.getOptionC())).append("\",");
+            csv.append("\"").append(escapeCsv(q.getOptionD())).append("\",");
+            csv.append("\"").append(escapeCsv(q.getCorrectOption())).append("\",");
+            csv.append("\"").append(escapeCsv(q.getExplanation())).append("\"\n");
+        }
+
+        byte[] csvBytes = csv.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Question_Bank_Export.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .contentLength(csvBytes.length)
+                .body(csvBytes);
+    }
+
+    private String escapeCsv(String input) {
+        if (input == null) return "";
+        return input.replace("\"", "\"\"");
+    }
+}

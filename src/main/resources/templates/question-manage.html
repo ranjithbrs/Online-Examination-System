@@ -28,7 +28,15 @@
                 Create, update, or remove exam questions in real-time.
             </p>
         </div>
-        <button onclick="toggleCreateModal()" class="btn btn-primary">+ Add New Question</button>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="/admin/questions/export/csv" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                📥 Export CSV
+            </a>
+            <a href="/admin/questions/export/json" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                📥 Export JSON
+            </a>
+            <button onclick="toggleCreateModal()" class="btn btn-primary">+ Add New Question</button>
+        </div>
     </div>
 
     <!-- Metrics Analytics Cards -->
