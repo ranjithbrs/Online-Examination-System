@@ -376,7 +376,32 @@ class OnlineexamApplicationTests {
                 .andExpect(model().attribute("totalQuestions", org.hamcrest.Matchers.greaterThanOrEqualTo(6)))
                 .andExpect(model().attribute("totalMarks", org.hamcrest.Matchers.greaterThanOrEqualTo(6)));
     }
+
+    @Test
+    void testExportQuestionsJson() throws Exception {
+        mockMvc.perform(get("/admin/questions/export/json"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Question_Bank_Export.json\""))
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()", org.hamcrest.Matchers.greaterThanOrEqualTo(6)))
+                .andExpect(jsonPath("$[0].questionText").exists())
+                .andExpect(jsonPath("$[0].category").exists());
+    }
+
+    @Test
+    void testExportQuestionsCsv() throws Exception {
+        mockMvc.perform(get("/admin/questions/export/csv"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Question_Bank_Export.csv\""))
+                .andExpect(resultMatcher -> {
+                    String content = resultMatcher.getResponse().getContentAsString();
+                    assertTrue(content.startsWith("\"ID\",\"Category\",\"Marks\",\"Question\""));
+                    assertTrue(content.contains("Java Fundamentals"));
+                });
+    }
 }
+
 
 
 
