@@ -52,8 +52,8 @@
                 <div class="form-group">
                     <label class="form-label">Exam Subject / Topic Module</label>
                     <select name="selectedTopic" class="form-control" style="background: var(--bg-card); color: var(--text-primary);">
-                        <option value="ALL">🌐 All Curriculum Topics (Comprehensive Full Exam)</option>
-                        <option th:each="t : ${topics}" th:value="${t}" th:text="'📚 ' + ${t}">Topic Name</option>
+                        <option value="ALL" th:text="'🌐 All Curriculum Topics (Comprehensive Full Exam - ' + ${totalQuestions} + ' Questions)'">🌐 All Curriculum Topics (Comprehensive Full Exam)</option>
+                        <option th:each="t : ${topics}" th:value="${t}" th:text="'📚 ' + ${t} + ' (' + (${topicCounts != null and topicCounts.containsKey(t)} ? ${topicCounts.get(t)} : '1') + ' Questions)'">Topic Name</option>
                     </select>
                     <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem; display: block;">
                         Choose a focused subject domain or select All Topics for the complete test.

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 public class HomeController {
@@ -54,8 +55,14 @@ public class HomeController {
 
         List<Question> questions = examService.getAllQuestions();
         List<String> topics = examService.getDistinctTopics();
+        Map<String, Long> topicCounts = questions.stream()
+                .collect(Collectors.groupingBy(
+                        q -> (q.getCategory() != null && !q.getCategory().isBlank()) ? q.getCategory().trim() : "General",
+                        Collectors.counting()
+                ));
         model.addAttribute("totalQuestions", questions.size());
         model.addAttribute("topics", topics);
+        model.addAttribute("topicCounts", topicCounts);
         model.addAttribute("examDurationMinutes", 10);
 
         return "start";

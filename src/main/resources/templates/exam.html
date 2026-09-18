@@ -814,6 +814,12 @@ function setPaletteFilter(filter, buttonElement) {
     });
 }
 
+function onOptionSelect(labelElem, qId) {
+    if (qId) {
+        onAnswerChange(qId);
+    }
+}
+
 function onAnswerChange(qId) {
     updatePalette(qId);
     triggerAutoSave();
