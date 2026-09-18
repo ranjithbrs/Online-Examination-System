@@ -2,10 +2,13 @@ package com.examsystem.onlineexam.service;
 
 import com.examsystem.onlineexam.dto.ExamSubmissionForm;
 import com.examsystem.onlineexam.dto.QuestionReviewDto;
+import com.examsystem.onlineexam.dto.SnapshotItemDto;
 import com.examsystem.onlineexam.model.ExamResult;
+import com.examsystem.onlineexam.model.ProctoringSnapshot;
 import com.examsystem.onlineexam.model.Question;
 import com.examsystem.onlineexam.model.ViolationLog;
 import com.examsystem.onlineexam.repository.ExamResultRepository;
+import com.examsystem.onlineexam.repository.ProctoringSnapshotRepository;
 import com.examsystem.onlineexam.repository.QuestionRepository;
 import com.examsystem.onlineexam.repository.ViolationLogRepository;
 import org.springframework.stereotype.Service;
@@ -25,13 +28,16 @@ public class ExamService {
     private final QuestionRepository questionRepository;
     private final ExamResultRepository examResultRepository;
     private final ViolationLogRepository violationLogRepository;
+    private final ProctoringSnapshotRepository proctoringSnapshotRepository;
 
     public ExamService(QuestionRepository questionRepository,
                        ExamResultRepository examResultRepository,
-                       ViolationLogRepository violationLogRepository) {
+                       ViolationLogRepository violationLogRepository,
+                       ProctoringSnapshotRepository proctoringSnapshotRepository) {
         this.questionRepository = questionRepository;
         this.examResultRepository = examResultRepository;
         this.violationLogRepository = violationLogRepository;
+        this.proctoringSnapshotRepository = proctoringSnapshotRepository;
     }
 
     public List<Question> getAllQuestions() {
@@ -48,6 +54,10 @@ public class ExamService {
 
     public List<ViolationLog> getViolationLogs(Long examResultId) {
         return violationLogRepository.findByExamResultIdOrderByTimestampAsc(examResultId);
+    }
+
+    public List<ProctoringSnapshot> getProctoringSnapshots(Long examResultId) {
+        return proctoringSnapshotRepository.findByExamResultIdOrderByCapturedAtAsc(examResultId);
     }
 
     @Transactional
@@ -152,6 +162,22 @@ public class ExamService {
 
         // Record individual proctoring violation logs
         createViolationLogs(savedResult.getId(), form, isDisqualified, disqualificationReason);
+
+        // Save proctoring webcam snapshots
+        if (form.getSnapshots() != null && !form.getSnapshots().isEmpty()) {
+            for (SnapshotItemDto s : form.getSnapshots()) {
+                if (s.getImageBase64() != null && !s.getImageBase64().isBlank()) {
+                    ProctoringSnapshot snapshot = new ProctoringSnapshot(
+                            savedResult.getId(),
+                            s.getType() != null && !s.getType().isBlank() ? s.getType() : "AUDIT_SNAPSHOT",
+                            s.getImageBase64(),
+                            s.getNote(),
+                            LocalDateTime.now()
+                    );
+                    proctoringSnapshotRepository.save(snapshot);
+                }
+            }
+        }
 
         return savedResult;
     }
