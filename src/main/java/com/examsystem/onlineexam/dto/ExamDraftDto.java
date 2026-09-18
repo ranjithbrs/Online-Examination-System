@@ -1,13 +1,16 @@
 package com.examsystem.onlineexam.dto;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ExamDraftDto implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Map<Long, String> answers = new HashMap<>();
+    private List<Long> markedQuestions = new ArrayList<>();
     private int tabSwitch;
     private int copyCount;
     private int rightClick;
@@ -19,7 +22,12 @@ public class ExamDraftDto implements Serializable {
     }
 
     public ExamDraftDto(Map<Long, String> answers, int tabSwitch, int copyCount, int rightClick, int fullscreenExit, int windowBlur) {
+        this(answers, new ArrayList<>(), tabSwitch, copyCount, rightClick, fullscreenExit, windowBlur);
+    }
+
+    public ExamDraftDto(Map<Long, String> answers, List<Long> markedQuestions, int tabSwitch, int copyCount, int rightClick, int fullscreenExit, int windowBlur) {
         this.answers = answers != null ? answers : new HashMap<>();
+        this.markedQuestions = markedQuestions != null ? markedQuestions : new ArrayList<>();
         this.tabSwitch = tabSwitch;
         this.copyCount = copyCount;
         this.rightClick = rightClick;
@@ -34,6 +42,14 @@ public class ExamDraftDto implements Serializable {
 
     public void setAnswers(Map<Long, String> answers) {
         this.answers = answers != null ? answers : new HashMap<>();
+    }
+
+    public List<Long> getMarkedQuestions() {
+        return markedQuestions;
+    }
+
+    public void setMarkedQuestions(List<Long> markedQuestions) {
+        this.markedQuestions = markedQuestions != null ? markedQuestions : new ArrayList<>();
     }
 
     public int getTabSwitch() {

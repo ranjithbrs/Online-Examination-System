@@ -1,6 +1,7 @@
 package com.examsystem.onlineexam;
 
 import com.examsystem.onlineexam.dto.AuditDashboardDto;
+import com.examsystem.onlineexam.dto.ExamDraftDto;
 import com.examsystem.onlineexam.dto.ExamSubmissionForm;
 import com.examsystem.onlineexam.dto.QuestionReviewDto;
 import com.examsystem.onlineexam.dto.SnapshotItemDto;
@@ -655,6 +656,47 @@ class OnlineexamApplicationTests {
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("attachment; filename=\"Exam_Audit_Report_")))
                 .andExpect(content().contentTypeCompatibleWith("text/csv"))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Result ID,Student Name,Email,Roll Number")));
+    }
+
+    @Test
+    void testExamDraftWithMarkedQuestions() throws Exception {
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+        ExamDraftDto draft = new ExamDraftDto();
+        draft.setAnswers(Map.of(1L, "A", 2L, "B"));
+        draft.setMarkedQuestions(List.of(1L, 3L));
+        draft.setTabSwitch(1);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonPayload = mapper.writeValueAsString(draft);
+
+        mockMvc.perform(post("/api/v1/exam/draft")
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SAVED"));
+
+        mockMvc.perform(get("/api/v1/exam/draft").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answers['1']").value("A"))
+                .andExpect(jsonPath("$.markedQuestions[0]").value(1))
+                .andExpect(jsonPath("$.markedQuestions[1]").value(3));
+    }
+
+    @Test
+    void testExamPageRendersMarkedQuestionsAndReviewModal() throws Exception {
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+        ExamDraftDto draft = new ExamDraftDto();
+        draft.setAnswers(Map.of(1L, "A"));
+        draft.setMarkedQuestions(List.of(1L));
+        session.setAttribute("examDraft", draft);
+
+        mockMvc.perform(get("/exam").session(session))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("draftMarkedQuestions"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Mark for Review")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Review & Confirm Submission")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("initialMarkedQuestions")));
     }
 }
 

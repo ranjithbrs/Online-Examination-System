@@ -119,6 +119,7 @@ public class HomeController {
         com.examsystem.onlineexam.dto.ExamDraftDto draft = 
                 (com.examsystem.onlineexam.dto.ExamDraftDto) session.getAttribute("examDraft");
         model.addAttribute("draftAnswers", draft != null ? draft.getAnswers() : new HashMap<>());
+        model.addAttribute("draftMarkedQuestions", draft != null ? draft.getMarkedQuestions() : new ArrayList<>());
         model.addAttribute("draft", draft != null ? draft : new com.examsystem.onlineexam.dto.ExamDraftDto());
 
         String topicDisplayName = "ALL".equalsIgnoreCase(selectedTopic) 
