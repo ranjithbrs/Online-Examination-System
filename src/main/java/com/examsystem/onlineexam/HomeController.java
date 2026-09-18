@@ -248,8 +248,23 @@ public class HomeController {
     @GetMapping("/history")
     public String historyPage(Model model) {
         List<ExamResult> results = examService.getAllExamResults();
+        com.examsystem.onlineexam.dto.AuditDashboardDto metrics = examService.getAuditDashboardMetrics();
         model.addAttribute("results", results);
+        model.addAttribute("metrics", metrics);
         return "history";
+    }
+
+    @GetMapping("/admin/history/export/csv")
+    public ResponseEntity<byte[]> exportAuditHistoryCsv() {
+        String csv = examService.exportExamResultsToCsv();
+        byte[] bytes = csv.getBytes(StandardCharsets.UTF_8);
+        String filename = "Exam_Audit_Report_" + java.time.LocalDate.now() + ".csv";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .contentLength(bytes.length)
+                .body(bytes);
     }
 
     // Teacher Question Management Routes

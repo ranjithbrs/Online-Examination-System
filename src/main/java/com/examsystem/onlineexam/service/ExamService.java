@@ -1,5 +1,6 @@
 package com.examsystem.onlineexam.service;
 
+import com.examsystem.onlineexam.dto.AuditDashboardDto;
 import com.examsystem.onlineexam.dto.ExamSubmissionForm;
 import com.examsystem.onlineexam.dto.QuestionReviewDto;
 import com.examsystem.onlineexam.dto.SnapshotItemDto;
@@ -58,6 +59,63 @@ public class ExamService {
 
     public List<ProctoringSnapshot> getProctoringSnapshots(Long examResultId) {
         return proctoringSnapshotRepository.findByExamResultIdOrderByCapturedAtAsc(examResultId);
+    }
+
+    public AuditDashboardDto getAuditDashboardMetrics() {
+        List<ExamResult> results = getAllExamResults();
+        int total = results.size();
+        if (total == 0) {
+            return new AuditDashboardDto(0, 0, 0, 0.0, 0.0, 100.0, 0, 0);
+        }
+
+        long passed = results.stream().filter(ExamResult::isPassed).count();
+        long failed = total - passed;
+        double passRate = Math.round((passed * 100.0 / total) * 10.0) / 10.0;
+        double avgScore = Math.round(results.stream().mapToDouble(ExamResult::getPercentage).average().orElse(0.0) * 10.0) / 10.0;
+        double avgTrust = Math.round(results.stream().mapToInt(ExamResult::getTrustScore).average().orElse(100.0) * 10.0) / 10.0;
+        long flagged = results.stream().filter(r -> r.isDisqualified() || r.getTrustScore() < 60).count();
+        long disqualified = results.stream().filter(ExamResult::isDisqualified).count();
+
+        return new AuditDashboardDto(total, passed, failed, passRate, avgScore, avgTrust, flagged, disqualified);
+    }
+
+    public String exportExamResultsToCsv() {
+        List<ExamResult> results = getAllExamResults();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Result ID,Student Name,Email,Roll Number,Score,Total Marks,Percentage,Passed,Time Taken (s),Overtime,Tab Switches,Copy Attempts,Right Clicks,Fullscreen Exits,Window Blurs,Total Violations,Disqualified,Disqualification Reason,Trust Score,Integrity Status,Submitted At\n");
+
+        for (ExamResult r : results) {
+            sb.append(escapeCsv(String.valueOf(r.getId()))).append(",");
+            sb.append(escapeCsv(r.getStudentName())).append(",");
+            sb.append(escapeCsv(r.getStudentEmail())).append(",");
+            sb.append(escapeCsv(r.getRollNumber())).append(",");
+            sb.append(r.getScore()).append(",");
+            sb.append(r.getTotalMarks()).append(",");
+            sb.append(r.getPercentage()).append(",");
+            sb.append(r.isPassed()).append(",");
+            sb.append(r.getTimeTakenSeconds()).append(",");
+            sb.append(r.isOvertime()).append(",");
+            sb.append(r.getTabSwitchCount()).append(",");
+            sb.append(r.getCopyCount()).append(",");
+            sb.append(r.getRightClickCount()).append(",");
+            sb.append(r.getFullscreenExitCount()).append(",");
+            sb.append(r.getWindowBlurCount()).append(",");
+            sb.append(r.getTotalViolations()).append(",");
+            sb.append(r.isDisqualified()).append(",");
+            sb.append(escapeCsv(r.getDisqualificationReason())).append(",");
+            sb.append(r.getTrustScore()).append(",");
+            sb.append(escapeCsv(r.getIntegrityStatus())).append(",");
+            sb.append(escapeCsv(r.getSubmittedAt() != null ? r.getSubmittedAt().toString() : "")).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "\"\"";
+        }
+        String escaped = value.replace("\"", "\"\"");
+        return "\"" + escaped + "\"";
     }
 
     @Transactional
