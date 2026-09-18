@@ -66,6 +66,7 @@
         <input type="hidden" name="disqualified" id="disqualifiedField" value="false">
         <input type="hidden" name="disqualificationReason" id="disqualificationReasonField" value="">
         <input type="hidden" name="snapshotPayload" id="snapshotPayload" value="[]">
+        <input type="hidden" id="initialMarkedQuestions" th:value="${draftMarkedQuestions != null ? #strings.listJoin(draftMarkedQuestions, ',') : ''}">
 
         <div class="progress-bar-container">
             <div id="examProgressBar" class="progress-bar-fill"></div>
@@ -93,8 +94,17 @@
                         </label>
                     </div>
 
-                    <div style="margin-top: 1rem; text-align: right;">
-                        <button type="button" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;" th:onclick="'clearAnswer(' + ${q.id} + ')'">
+                    <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <button type="button" class="btn btn-secondary review-toggle-btn"
+                                th:id="'markBtn-' + ${q.id}"
+                                th:data-qid="${q.id}"
+                                onclick="toggleMarkForReview(this.getAttribute('data-qid'))"
+                                style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                            <span>⭐</span> <span th:id="'markText-' + ${q.id}">Mark for Review</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;"
+                                th:data-qid="${q.id}"
+                                onclick="clearAnswer(this.getAttribute('data-qid'))">
                             Clear Selection
                         </button>
                     </div>
@@ -152,23 +162,36 @@
                     <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;">
                         Question Palette
                     </h4>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary);">
-                        Click number to jump to question.
-                    </p>
+
+                    <!-- Palette Counters Legend -->
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; padding: 0.5rem 0.6rem; background: rgba(15, 23, 42, 0.6); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                        <div><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#10b981; margin-right:3px;"></span>Ans: <strong id="cntAnswered" style="color:var(--text-primary);">0</strong></div>
+                        <div><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#f59e0b; margin-right:3px;"></span>Review: <strong id="cntMarked" style="color:var(--text-primary);">0</strong></div>
+                        <div><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background-color:#64748b; margin-right:3px;"></span>Left: <strong id="cntUnanswered" style="color:var(--text-primary);">0</strong></div>
+                    </div>
+
+                    <!-- Palette Filter Tabs -->
+                    <div style="display: flex; gap: 0.25rem; margin-bottom: 0.75rem;">
+                        <button type="button" class="btn btn-primary pal-filter-btn active-pal-filter" data-filter="ALL" onclick="setPaletteFilter('ALL', this)" style="padding: 0.25rem 0.4rem; font-size: 0.7rem; flex: 1;">All</button>
+                        <button type="button" class="btn btn-secondary pal-filter-btn" data-filter="ANSWERED" onclick="setPaletteFilter('ANSWERED', this)" style="padding: 0.25rem 0.4rem; font-size: 0.7rem; flex: 1;">Ans</button>
+                        <button type="button" class="btn btn-secondary pal-filter-btn" data-filter="MARKED" onclick="setPaletteFilter('MARKED', this)" style="padding: 0.25rem 0.4rem; font-size: 0.7rem; flex: 1;">Marked</button>
+                        <button type="button" class="btn btn-secondary pal-filter-btn" data-filter="PENDING" onclick="setPaletteFilter('PENDING', this)" style="padding: 0.25rem 0.4rem; font-size: 0.7rem; flex: 1;">Left</button>
+                    </div>
 
                     <div class="palette-grid">
                         <button type="button" th:each="q, iterStat : ${questions}" 
                                 class="palette-btn" 
                                 th:classappend="${draftAnswers != null and draftAnswers.containsKey(q.id)} ? 'answered' : ''"
                                 th:id="'pbtn-' + ${q.id}"
-                                th:onclick="'scrollToQuestion(' + ${q.id} + ')'"
+                                th:data-qid="${q.id}"
+                                onclick="scrollToQuestion(this.getAttribute('data-qid'))"
                                 th:text="${iterStat.count}">
                             1
                         </button>
                     </div>
 
-                    <div style="margin-top: 2rem;">
-                        <button type="submit" class="btn btn-primary btn-block" style="padding: 1rem;">
+                    <div style="margin-top: 1.5rem;">
+                        <button type="button" onclick="requestExamSubmission()" class="btn btn-primary btn-block" style="padding: 1rem;">
                             Submit Examination
                         </button>
                     </div>
@@ -180,6 +203,45 @@
 
 <!-- Violation Toast Overlay Container -->
 <div id="toastContainer"></div>
+
+<!-- Pre-Submission Review & Confirmation Modal -->
+<div id="submissionConfirmModal" class="modal-overlay" style="display: none; z-index: 9998; background: rgba(11, 15, 25, 0.9);">
+    <div class="modal-content" style="max-width: 480px; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📋</div>
+        <h2 style="font-size: 1.4rem; color: var(--text-primary); margin-bottom: 0.5rem;">Review & Confirm Submission</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.25rem;">
+            Please verify your exam status before final evaluation.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; text-align: center;">
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.75rem;">
+                <div style="font-size: 1.4rem; font-weight: 800; color: var(--color-success);" id="modalAnsweredCount">0</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">Answered</div>
+            </div>
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-sm); padding: 0.75rem;">
+                <div style="font-size: 1.4rem; font-weight: 800; color: var(--color-warning);" id="modalMarkedCount">0</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">Marked</div>
+            </div>
+            <div style="background: rgba(100, 116, 139, 0.1); border: 1px solid rgba(100, 116, 139, 0.3); border-radius: var(--radius-sm); padding: 0.75rem;">
+                <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-secondary);" id="modalUnansweredCount">0</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">Unanswered</div>
+            </div>
+        </div>
+
+        <div id="modalWarningAlert" style="display: none; padding: 0.75rem; background: rgba(245, 158, 11, 0.15); border-left: 3px solid var(--color-warning); border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text-primary); text-align: left; margin-bottom: 1.25rem;">
+            ⚠️ You have unattempted questions or questions still marked for review.
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="button" onclick="closeSubmissionConfirmModal()" class="btn btn-secondary" style="flex: 1;">
+                ← Return to Exam
+            </button>
+            <button type="button" onclick="finalizeAndSubmitExam()" class="btn btn-primary" style="flex: 1;">
+                Confirm & Submit &rarr;
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- Disqualification Lockout Overlay -->
 <div id="disqualificationModal" class="modal-overlay" style="display: none; background: rgba(11, 15, 25, 0.97); z-index: 9999;">
@@ -211,6 +273,7 @@ let examSubmitted = false;
 
 let capturedSnapshots = [];
 let cameraStream = null;
+let markedQuestions = new Set();
 
 function initWebcam() {
     const video = document.getElementById("proctorWebcam");
@@ -328,6 +391,7 @@ function initializeExamSession() {
     }
 
     initWebcam();
+    initMarkedQuestionsFromDraft();
     updateProgress();
     startTimer();
 
@@ -430,12 +494,132 @@ function showToast(message) {
     }, 4000);
 }
 
+function initMarkedQuestionsFromDraft() {
+    const initMarkedStr = document.getElementById("initialMarkedQuestions") ? document.getElementById("initialMarkedQuestions").value : "";
+    if (initMarkedStr) {
+        initMarkedStr.split(",").forEach(id => {
+            const trimmed = id.trim();
+            if (trimmed) {
+                const qId = parseInt(trimmed);
+                markedQuestions.add(qId);
+                updateQuestionCardMarkState(qId);
+                const pbtn = document.getElementById(`pbtn-${qId}`);
+                if (pbtn) pbtn.classList.add("marked");
+            }
+        });
+    }
+    updatePaletteSummary();
+}
+
+function toggleMarkForReview(qId) {
+    qId = parseInt(qId);
+    if (markedQuestions.has(qId)) {
+        markedQuestions.delete(qId);
+        showToast(`Question ${getQuestionNumber(qId)} unmarked`);
+    } else {
+        markedQuestions.add(qId);
+        showToast(`Question ${getQuestionNumber(qId)} marked for review ⭐`);
+    }
+    updateQuestionCardMarkState(qId);
+    updatePalette(qId);
+    triggerAutoSave();
+}
+
+function updateQuestionCardMarkState(qId) {
+    const markBtn = document.getElementById(`markBtn-${qId}`);
+    const markText = document.getElementById(`markText-${qId}`);
+    const isMarked = markedQuestions.has(parseInt(qId));
+    if (markBtn) {
+        if (isMarked) {
+            markBtn.classList.add("active");
+        } else {
+            markBtn.classList.remove("active");
+        }
+    }
+    if (markText) {
+        markText.innerText = isMarked ? "Marked for Review" : "Mark for Review";
+    }
+}
+
+function isQuestionAnswered(qId) {
+    const radios = document.getElementsByName(`q_${qId}`);
+    for (let r of radios) {
+        if (r.checked) return true;
+    }
+    return false;
+}
+
+function getQuestionNumber(qId) {
+    const btn = document.getElementById(`pbtn-${qId}`);
+    return btn ? btn.innerText.trim() : qId;
+}
+
 function updatePalette(qId) {
     const paletteBtn = document.getElementById(`pbtn-${qId}`);
     if (paletteBtn) {
-        paletteBtn.classList.add("answered");
+        const isAnswered = isQuestionAnswered(qId);
+        const isMarked = markedQuestions.has(parseInt(qId));
+
+        if (isAnswered) {
+            paletteBtn.classList.add("answered");
+        } else {
+            paletteBtn.classList.remove("answered");
+        }
+
+        if (isMarked) {
+            paletteBtn.classList.add("marked");
+        } else {
+            paletteBtn.classList.remove("marked");
+        }
     }
+    updatePaletteSummary();
     updateProgress();
+}
+
+function updatePaletteSummary() {
+    const allBtns = document.querySelectorAll(".palette-grid .palette-btn");
+    let answered = 0;
+    let marked = 0;
+    let total = allBtns.length;
+
+    allBtns.forEach(btn => {
+        const qId = parseInt(btn.getAttribute("data-qid"));
+        if (isQuestionAnswered(qId)) answered++;
+        if (markedQuestions.has(qId)) marked++;
+    });
+
+    const unattempted = Math.max(0, total - answered);
+    const cntAns = document.getElementById("cntAnswered");
+    const cntMrk = document.getElementById("cntMarked");
+    const cntUnans = document.getElementById("cntUnanswered");
+
+    if (cntAns) cntAns.innerText = answered;
+    if (cntMrk) cntMrk.innerText = marked;
+    if (cntUnans) cntUnans.innerText = unattempted;
+}
+
+function setPaletteFilter(filter, buttonElement) {
+    document.querySelectorAll('.pal-filter-btn').forEach(btn => {
+        btn.classList.remove('btn-primary', 'active-pal-filter');
+        btn.classList.add('btn-secondary');
+    });
+    if (buttonElement) {
+        buttonElement.classList.remove('btn-secondary');
+        buttonElement.classList.add('btn-primary', 'active-pal-filter');
+    }
+
+    document.querySelectorAll('.palette-grid .palette-btn').forEach(btn => {
+        const qId = parseInt(btn.getAttribute("data-qid"));
+        const isAnswered = isQuestionAnswered(qId);
+        const isMarked = markedQuestions.has(qId);
+
+        let show = true;
+        if (filter === 'ANSWERED') show = isAnswered;
+        else if (filter === 'MARKED') show = isMarked;
+        else if (filter === 'PENDING') show = !isAnswered;
+
+        btn.style.display = show ? "flex" : "none";
+    });
 }
 
 function onAnswerChange(qId) {
@@ -470,6 +654,7 @@ function sendDraftPayload() {
 
     const payload = {
         answers: answers,
+        markedQuestions: Array.from(markedQuestions),
         tabSwitch: tabSwitchCount,
         copyCount: copyCount,
         rightClick: rightClickCount,
@@ -501,11 +686,7 @@ function clearAnswer(qId) {
     for (let r of radios) {
         r.checked = false;
     }
-    const paletteBtn = document.getElementById(`pbtn-${qId}`);
-    if (paletteBtn) {
-        paletteBtn.classList.remove("answered");
-    }
-    updateProgress();
+    updatePalette(qId);
     triggerAutoSave();
 }
 
@@ -526,6 +707,53 @@ function scrollToQuestion(qId) {
     if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
     }
+}
+
+function requestExamSubmission() {
+    const allBtns = document.querySelectorAll(".palette-grid .palette-btn");
+    let answered = 0;
+    let marked = 0;
+    let total = allBtns.length;
+
+    allBtns.forEach(btn => {
+        const qId = parseInt(btn.getAttribute("data-qid"));
+        if (isQuestionAnswered(qId)) answered++;
+        if (markedQuestions.has(qId)) marked++;
+    });
+
+    const unattempted = Math.max(0, total - answered);
+
+    const ansElem = document.getElementById("modalAnsweredCount");
+    const mrkElem = document.getElementById("modalMarkedCount");
+    const unansElem = document.getElementById("modalUnansweredCount");
+    if (ansElem) ansElem.innerText = answered;
+    if (mrkElem) mrkElem.innerText = marked;
+    if (unansElem) unansElem.innerText = unattempted;
+
+    const warningBox = document.getElementById("modalWarningAlert");
+    if (warningBox) {
+        if (unattempted > 0 || marked > 0) {
+            warningBox.style.display = "block";
+        } else {
+            warningBox.style.display = "none";
+        }
+    }
+
+    const modal = document.getElementById("submissionConfirmModal");
+    if (modal) {
+        modal.style.display = "flex";
+    }
+}
+
+function closeSubmissionConfirmModal() {
+    const modal = document.getElementById("submissionConfirmModal");
+    if (modal) modal.style.display = "none";
+}
+
+function finalizeAndSubmitExam() {
+    closeSubmissionConfirmModal();
+    beforeSubmitExam();
+    document.getElementById("examForm").submit();
 }
 
 function beforeSubmitExam() {
