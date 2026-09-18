@@ -2,13 +2,16 @@ package com.examsystem.onlineexam;
 
 import com.examsystem.onlineexam.dto.ExamSubmissionForm;
 import com.examsystem.onlineexam.dto.QuestionReviewDto;
+import com.examsystem.onlineexam.dto.SnapshotItemDto;
 import com.examsystem.onlineexam.model.ExamResult;
+import com.examsystem.onlineexam.model.ProctoringSnapshot;
 import com.examsystem.onlineexam.model.Question;
 import com.examsystem.onlineexam.model.ViolationLog;
 import com.examsystem.onlineexam.repository.ExamResultRepository;
 import com.examsystem.onlineexam.repository.QuestionRepository;
 import com.examsystem.onlineexam.service.ExamService;
 import com.examsystem.onlineexam.service.PdfExportService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -504,6 +507,76 @@ class OnlineexamApplicationTests {
         for (com.examsystem.onlineexam.dto.QuestionDisplayDto q : sessionQuestions) {
             assertEquals("Database Systems", q.getCategory());
         }
+    }
+
+    @Test
+    void testProctoringSnapshotPersistenceAndRetrieval() {
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("Cam Tester");
+        form.setStudentEmail("cam@test.com");
+        form.setRollNumber("CAM-001");
+        form.setAnswers(Map.of());
+
+        List<SnapshotItemDto> snapshots = List.of(
+                new SnapshotItemDto("SESSION_START", "data:image/jpeg;base64,/9j/4AAQSkZJRg==", "Session init", "2026-09-18T10:00:00Z"),
+                new SnapshotItemDto("SECURITY_EVENT", "data:image/jpeg;base64,/9j/4AAQSkZJRg==", "Strike 1: Tab switch", "2026-09-18T10:05:00Z"),
+                new SnapshotItemDto("FINAL_SUBMISSION", "data:image/jpeg;base64,/9j/4AAQSkZJRg==", "Final submit", "2026-09-18T10:10:00Z")
+        );
+        form.setSnapshots(snapshots);
+
+        ExamResult result = examService.evaluateAndSaveExam(form);
+        assertNotNull(result.getId());
+
+        List<ProctoringSnapshot> savedSnapshots = examService.getProctoringSnapshots(result.getId());
+        assertNotNull(savedSnapshots);
+        assertEquals(3, savedSnapshots.size());
+        assertEquals("SESSION_START", savedSnapshots.get(0).getSnapshotType());
+        assertEquals("SECURITY_EVENT", savedSnapshots.get(1).getSnapshotType());
+        assertEquals("FINAL_SUBMISSION", savedSnapshots.get(2).getSnapshotType());
+        assertEquals("Strike 1: Tab switch", savedSnapshots.get(1).getNote());
+        assertEquals("data:image/jpeg;base64,/9j/4AAQSkZJRg==", savedSnapshots.get(0).getImageBase64());
+    }
+
+    @Test
+    void testExamSubmitWithWebcamSnapshotsPayload() throws Exception {
+        List<SnapshotItemDto> snapshots = List.of(
+                new SnapshotItemDto("SESSION_START", "data:image/jpeg;base64,startframe123", "Session started", "2026-09-18T10:00:00Z"),
+                new SnapshotItemDto("FINAL_SUBMISSION", "data:image/jpeg;base64,endframe123", "Exam submitted", "2026-09-18T10:10:00Z")
+        );
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonPayload = mapper.writeValueAsString(snapshots);
+
+        mockMvc.perform(post("/submit")
+                .param("studentName", "Snapshot Student")
+                .param("studentEmail", "snapshot@test.com")
+                .param("rollNumber", "SNAP-001")
+                .param("tabSwitch", "0")
+                .param("copyCount", "0")
+                .param("rightClick", "0")
+                .param("fullscreenExit", "0")
+                .param("windowBlur", "0")
+                .param("timeTakenSeconds", "120")
+                .param("snapshotPayload", jsonPayload))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrlPattern("/result/*"));
+
+        List<ExamResult> results = examService.getAllExamResults();
+        ExamResult studentResult = results.stream()
+                .filter(r -> "SNAP-001".equals(r.getRollNumber()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(studentResult);
+
+        // Verify result page contains snapshots
+        mockMvc.perform(get("/result/" + studentResult.getId()))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("snapshots"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Candidate Proctoring Photo Audit")));
+
+        List<ProctoringSnapshot> auditSnaps = examService.getProctoringSnapshots(studentResult.getId());
+        assertEquals(2, auditSnaps.size());
+        assertEquals("SESSION_START", auditSnaps.get(0).getSnapshotType());
+        assertEquals("data:image/jpeg;base64,startframe123", auditSnaps.get(0).getImageBase64());
     }
 }
 

@@ -45,6 +45,9 @@ public class ExamSubmissionForm {
     // JSON string or comma-separated log of proctoring events
     private String violationLogsJson;
 
+    // Proctoring Webcam Snapshots
+    private java.util.List<SnapshotItemDto> snapshots = new java.util.ArrayList<>();
+
     public ExamSubmissionForm() {
     }
 
@@ -150,5 +153,13 @@ public class ExamSubmissionForm {
 
     public void setViolationLogsJson(String violationLogsJson) {
         this.violationLogsJson = violationLogsJson;
+    }
+
+    public java.util.List<SnapshotItemDto> getSnapshots() {
+        return snapshots;
+    }
+
+    public void setSnapshots(java.util.List<SnapshotItemDto> snapshots) {
+        this.snapshots = snapshots != null ? snapshots : new java.util.ArrayList<>();
     }
 }

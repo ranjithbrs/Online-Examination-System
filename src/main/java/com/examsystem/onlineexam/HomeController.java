@@ -2,7 +2,9 @@ package com.examsystem.onlineexam;
 
 import com.examsystem.onlineexam.dto.ExamSubmissionForm;
 import com.examsystem.onlineexam.dto.QuestionReviewDto;
+import com.examsystem.onlineexam.dto.SnapshotItemDto;
 import com.examsystem.onlineexam.model.ExamResult;
+import com.examsystem.onlineexam.model.ProctoringSnapshot;
 import com.examsystem.onlineexam.model.Question;
 import com.examsystem.onlineexam.model.ViolationLog;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -184,6 +186,17 @@ public class HomeController {
         }
         form.setAnswers(answers);
 
+        // Parse proctoring webcam snapshots if provided
+        String snapshotPayload = allParams.get("snapshotPayload");
+        if (snapshotPayload != null && !snapshotPayload.isBlank()) {
+            try {
+                List<SnapshotItemDto> snapshots =
+                        objectMapper.readValue(snapshotPayload, new TypeReference<List<SnapshotItemDto>>() {});
+                form.setSnapshots(snapshots);
+            } catch (Exception ignored) {
+            }
+        }
+
         ExamResult savedResult = examService.evaluateAndSaveExam(form);
 
         // Store answers in session for rendering detail review
@@ -204,10 +217,12 @@ public class HomeController {
         // Load question reviews directly from DB-persisted ExamResult
         List<QuestionReviewDto> questionReviews = examService.getQuestionReviews(result);
         List<ViolationLog> violationLogs = examService.getViolationLogs(id);
+        List<ProctoringSnapshot> snapshots = examService.getProctoringSnapshots(id);
 
         model.addAttribute("result", result);
         model.addAttribute("questionReviews", questionReviews);
         model.addAttribute("violationLogs", violationLogs);
+        model.addAttribute("snapshots", snapshots);
 
         return "result";
     }

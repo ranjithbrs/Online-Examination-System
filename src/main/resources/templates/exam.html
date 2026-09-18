@@ -65,6 +65,7 @@
         <input type="hidden" name="timeTakenSeconds" id="timeTakenField" value="0">
         <input type="hidden" name="disqualified" id="disqualifiedField" value="false">
         <input type="hidden" name="disqualificationReason" id="disqualificationReasonField" value="">
+        <input type="hidden" name="snapshotPayload" id="snapshotPayload" value="[]">
 
         <div class="progress-bar-container">
             <div id="examProgressBar" class="progress-bar-fill"></div>
@@ -121,6 +122,29 @@
                             <span id="strikeBadge" class="badge badge-success" style="font-size: 0.75rem;">0 / 3 Strikes</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Webcam Proctor Monitor Box -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Webcam Feed</span>
+                        <span id="cameraStatusBadge" class="badge badge-warning" style="font-size: 0.75rem;">STANDBY</span>
+                    </h4>
+                    <div style="position: relative; width: 100%; height: 140px; border-radius: var(--radius-sm); overflow: hidden; background: #000; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;">
+                        <video id="proctorWebcam" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                        <div id="camFallback" style="display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92); flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0.5rem;">
+                            <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📷</div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">Webcam offline or permission denied</div>
+                        </div>
+                        <div id="recordingIndicator" style="position: absolute; top: 8px; left: 8px; display: none; align-items: center; gap: 5px; background: rgba(0,0,0,0.65); padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; color: #fff; font-weight: 600;">
+                            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: #ef4444;"></span>
+                            LIVE
+                        </div>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0;">
+                        Auto-captures audit frames at start, security strikes, and submission.
+                    </p>
+                    <canvas id="snapshotCanvas" width="320" height="240" style="display: none;"></canvas>
                 </div>
 
                 <!-- Question Palette -->
@@ -185,9 +209,75 @@ let durationSeconds = 600; // 10 minutes default
 let timerInterval = null;
 let examSubmitted = false;
 
+let capturedSnapshots = [];
+let cameraStream = null;
+
+function initWebcam() {
+    const video = document.getElementById("proctorWebcam");
+    const badge = document.getElementById("cameraStatusBadge");
+    const fallback = document.getElementById("camFallback");
+    const indicator = document.getElementById("recordingIndicator");
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 320 }, height: { ideal: 240 } } })
+            .then(stream => {
+                cameraStream = stream;
+                if (video) {
+                    video.srcObject = stream;
+                    video.play().catch(() => {});
+                }
+                if (badge) {
+                    badge.className = "badge badge-success";
+                    badge.innerText = "ACTIVE";
+                }
+                if (fallback) fallback.style.display = "none";
+                if (indicator) indicator.style.display = "flex";
+
+                setTimeout(() => {
+                    captureSnapshot("SESSION_START", "Candidate exam session initialized");
+                }, 1000);
+            })
+            .catch(err => {
+                if (badge) {
+                    badge.className = "badge badge-danger";
+                    badge.innerText = "OFFLINE";
+                }
+                if (fallback) fallback.style.display = "flex";
+                if (indicator) indicator.style.display = "none";
+            });
+    } else {
+        if (badge) {
+            badge.className = "badge badge-danger";
+            badge.innerText = "UNSUPPORTED";
+        }
+        if (fallback) fallback.style.display = "flex";
+    }
+}
+
+function captureSnapshot(type, note) {
+    const video = document.getElementById("proctorWebcam");
+    const canvas = document.getElementById("snapshotCanvas");
+    if (!video || !canvas || video.readyState < 2) return;
+
+    try {
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+        capturedSnapshots.push({
+            type: type,
+            imageBase64: dataUrl,
+            note: note,
+            timestamp: new Date().toISOString()
+        });
+    } catch (e) {
+        console.warn("Snapshot capture error", e);
+    }
+}
+
 function recordSecurityStrike(reason) {
     if (examSubmitted) return;
     strikeCount++;
+    captureSnapshot("SECURITY_EVENT", "Strike " + strikeCount + ": " + (reason || "Security violation"));
     const badge = document.getElementById("strikeBadge");
     if (badge) {
         badge.innerText = `${strikeCount} / ${MAX_STRIKES} Strikes`;
@@ -237,6 +327,7 @@ function initializeExamSession() {
         document.documentElement.requestFullscreen().catch(() => {});
     }
 
+    initWebcam();
     updateProgress();
     startTimer();
 
@@ -439,12 +530,25 @@ function scrollToQuestion(qId) {
 
 function beforeSubmitExam() {
     examSubmitted = true;
+    captureSnapshot("FINAL_SUBMISSION", "Candidate finalized exam submission");
+
     document.getElementById("tabSwitchField").value = tabSwitchCount;
     document.getElementById("copyField").value = copyCount;
     document.getElementById("rightClickField").value = rightClickCount;
     document.getElementById("fullscreenField").value = fullscreenExitCount;
     document.getElementById("blurField").value = windowBlurCount;
     document.getElementById("timeTakenField").value = Math.max(1, 600 - durationSeconds);
+
+    const snapshotField = document.getElementById("snapshotPayload");
+    if (snapshotField) {
+        snapshotField.value = JSON.stringify(capturedSnapshots);
+    }
+
+    if (cameraStream) {
+        try {
+            cameraStream.getTracks().forEach(track => track.stop());
+        } catch (e) {}
+    }
 }
 </script>
 
