@@ -698,6 +698,81 @@ class OnlineexamApplicationTests {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Review & Confirm Submission")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("initialMarkedQuestions")));
     }
+
+    @Test
+    void testExamEvaluationWithAudioSpikesRiskPenalty() {
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("Audio Candidate");
+        form.setStudentEmail("audio@test.com");
+        form.setRollNumber("AUD-101");
+        form.setAudioSpikes(3);
+        form.setAnswers(Map.of());
+
+        ExamResult result = examService.evaluateAndSaveExam(form);
+
+        assertNotNull(result);
+        assertEquals(3, result.getAudioSpikeCount());
+        assertTrue(result.getTotalViolations() >= 3);
+        // Each audio spike adds 6 risk points: 3 * 6 = 18 risk points -> trust score = 82
+        assertEquals(18, result.getRiskScore());
+        assertEquals(82, result.getTrustScore());
+        assertEquals("Moderate Warning", result.getIntegrityStatus());
+
+        List<com.examsystem.onlineexam.model.ViolationLog> logs = examService.getViolationLogs(result.getId());
+        boolean hasAudioLog = logs.stream().anyMatch(l -> "AUDIO_SPIKE".equals(l.getViolationType()));
+        assertTrue(hasAudioLog, "Violation logs must include AUDIO_SPIKE entry");
+    }
+
+    @Test
+    void testExamDraftAutoSaveWithAudioSpikes() throws Exception {
+        org.springframework.mock.web.MockHttpSession session = new org.springframework.mock.web.MockHttpSession();
+        ExamDraftDto draft = new ExamDraftDto();
+        draft.setAnswers(Map.of(1L, "C"));
+        draft.setAudioSpikes(4);
+        draft.setTabSwitch(1);
+
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonPayload = mapper.writeValueAsString(draft);
+
+        mockMvc.perform(post("/api/v1/exam/draft")
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonPayload))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SAVED"));
+
+        mockMvc.perform(get("/api/v1/exam/draft").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answers['1']").value("C"))
+                .andExpect(jsonPath("$.audioSpikes").value(4))
+                .andExpect(jsonPath("$.tabSwitch").value(1));
+    }
+
+    @Test
+    void testExportExamResultsToCsvIncludesAudioSpikes() {
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("Audio CSV Candidate");
+        form.setStudentEmail("audiocsv@test.com");
+        form.setRollNumber("AUD-CSV-01");
+        form.setAudioSpikes(2);
+        form.setAnswers(Map.of());
+        examService.evaluateAndSaveExam(form);
+
+        String csv = examService.exportExamResultsToCsv();
+        assertNotNull(csv);
+        assertTrue(csv.contains("Audio Spikes"), "CSV header must contain Audio Spikes column");
+        assertTrue(csv.contains("Audio CSV Candidate"));
+    }
+
+    @Test
+    void testExamPageRendersAudioMonitorWidget() throws Exception {
+        mockMvc.perform(get("/exam"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Ambient Audio")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("audioMeterFill")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("audioSpikesField")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Room Noise Level")));
+    }
 }
 
 

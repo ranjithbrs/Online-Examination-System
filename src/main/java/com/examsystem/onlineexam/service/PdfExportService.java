@@ -202,9 +202,9 @@ public class PdfExportService {
             document.add(auditTable);
 
             // Violation Breakdown Table
-            PdfPTable violTable = new PdfPTable(5);
+            PdfPTable violTable = new PdfPTable(6);
             violTable.setWidthPercentage(100);
-            violTable.setWidths(new float[]{20f, 20f, 20f, 20f, 20f});
+            violTable.setWidths(new float[]{16.66f, 16.66f, 16.66f, 16.66f, 16.66f, 16.70f});
             violTable.setSpacingAfter(25f);
 
             addTableHeader(violTable, "Tab Switches", labelFont);
@@ -212,12 +212,14 @@ public class PdfExportService {
             addTableHeader(violTable, "Right Clicks", labelFont);
             addTableHeader(violTable, "Fullscreen Exits", labelFont);
             addTableHeader(violTable, "Window Blurs", labelFont);
+            addTableHeader(violTable, "Audio Spikes", labelFont);
 
             addScoreCell(violTable, String.valueOf(result.getTabSwitchCount()), valueFont);
             addScoreCell(violTable, String.valueOf(result.getCopyCount()), valueFont);
             addScoreCell(violTable, String.valueOf(result.getRightClickCount()), valueFont);
             addScoreCell(violTable, String.valueOf(result.getFullscreenExitCount()), valueFont);
             addScoreCell(violTable, String.valueOf(result.getWindowBlurCount()), valueFont);
+            addScoreCell(violTable, String.valueOf(result.getAudioSpikeCount()), valueFont);
 
             document.add(violTable);
 

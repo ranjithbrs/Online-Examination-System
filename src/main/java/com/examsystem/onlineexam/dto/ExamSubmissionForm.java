@@ -37,6 +37,9 @@ public class ExamSubmissionForm {
     @Min(value = 0, message = "Window blur count must be positive")
     private int windowBlur = 0;
 
+    @Min(value = 0, message = "Audio spikes count must be positive")
+    private int audioSpikes = 0;
+
     private int timeTakenSeconds = 0;
 
     private boolean disqualified = false;
@@ -121,6 +124,14 @@ public class ExamSubmissionForm {
 
     public void setWindowBlur(int windowBlur) {
         this.windowBlur = windowBlur;
+    }
+
+    public int getAudioSpikes() {
+        return audioSpikes;
+    }
+
+    public void setAudioSpikes(int audioSpikes) {
+        this.audioSpikes = audioSpikes;
     }
 
     public int getTimeTakenSeconds() {

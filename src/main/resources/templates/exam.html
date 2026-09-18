@@ -62,6 +62,7 @@
         <input type="hidden" name="rightClick" id="rightClickField" value="0">
         <input type="hidden" name="fullscreenExit" id="fullscreenField" value="0">
         <input type="hidden" name="windowBlur" id="blurField" value="0">
+        <input type="hidden" name="audioSpikes" id="audioSpikesField" th:value="${draft != null ? draft.audioSpikes : 0}">
         <input type="hidden" name="timeTakenSeconds" id="timeTakenField" value="0">
         <input type="hidden" name="disqualified" id="disqualifiedField" value="false">
         <input type="hidden" name="disqualificationReason" id="disqualificationReasonField" value="">
@@ -127,6 +128,7 @@
                         <div>Copy Attempts: <strong id="liveCopyCount" style="color: var(--text-primary);">0</strong></div>
                         <div>Right Clicks: <strong id="liveRightClickCount" style="color: var(--text-primary);">0</strong></div>
                         <div>Fullscreen Exits: <strong id="liveFullscreenCount" style="color: var(--text-primary);">0</strong></div>
+                        <div>Audio Spikes: <strong id="liveAudioCount" style="color: var(--text-primary);" th:text="${draft != null ? draft.audioSpikes : 0}">0</strong></div>
                         <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                             <span>Security Strikes:</span>
                             <span id="strikeBadge" class="badge badge-success" style="font-size: 0.75rem;">0 / 3 Strikes</span>
@@ -155,6 +157,30 @@
                         Auto-captures audit frames at start, security strikes, and submission.
                     </p>
                     <canvas id="snapshotCanvas" width="320" height="240" style="display: none;"></canvas>
+                </div>
+
+                <!-- Ambient Audio Noise Proctor Monitor Box -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>🎙️ Ambient Audio</span>
+                        <span id="audioStatusBadge" class="badge badge-warning" style="font-size: 0.75rem;">STANDBY</span>
+                    </h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.4rem;">
+                        <span>Room Noise Level</span>
+                        <strong id="audioLevelPercent" style="color: var(--text-primary);">0%</strong>
+                    </div>
+                    <div class="audio-meter-track" style="margin-bottom: 0.6rem;">
+                        <div id="audioMeterFill" class="audio-meter-fill normal"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                        <span>Noise Spikes:</span>
+                        <span id="audioSpikeBadge" class="badge badge-success" style="font-size: 0.75rem;">
+                            <strong id="audioSpikesDisplay" th:text="${draft != null ? draft.audioSpikes : 0}">0</strong> Detected
+                        </span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0;">
+                        Real-time Web Audio API monitor. Disturbance or speech above 65% triggers security alerts.
+                    </p>
                 </div>
 
                 <!-- Question Palette -->
@@ -273,6 +299,11 @@ let examSubmitted = false;
 
 let capturedSnapshots = [];
 let cameraStream = null;
+let audioStream = null;
+let audioContext = null;
+let audioAnalyser = null;
+let audioSpikesCount = 0;
+let lastAudioSpikeTime = 0;
 let markedQuestions = new Set();
 
 function initWebcam() {
@@ -315,6 +346,127 @@ function initWebcam() {
         }
         if (fallback) fallback.style.display = "flex";
     }
+}
+
+function initAudioMonitor() {
+    const badge = document.getElementById("audioStatusBadge");
+    const meterFill = document.getElementById("audioMeterFill");
+    const percentDisplay = document.getElementById("audioLevelPercent");
+
+    // Initialize audioSpikesCount from hidden field if draft was restored
+    const initAudioElem = document.getElementById("audioSpikesField");
+    if (initAudioElem && parseInt(initAudioElem.value) > 0) {
+        audioSpikesCount = parseInt(initAudioElem.value);
+        const liveAudio = document.getElementById("liveAudioCount");
+        const spikeDisplay = document.getElementById("audioSpikesDisplay");
+        if (liveAudio) liveAudio.innerText = audioSpikesCount;
+        if (spikeDisplay) spikeDisplay.innerText = audioSpikesCount;
+    }
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                audioStream = stream;
+                try {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContextClass) {
+                        if (badge) {
+                            badge.className = "badge badge-warning";
+                            badge.innerText = "UNSUPPORTED";
+                        }
+                        return;
+                    }
+                    audioContext = new AudioContextClass();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    audioAnalyser = audioContext.createAnalyser();
+                    audioAnalyser.fftSize = 256;
+                    audioAnalyser.smoothingTimeConstant = 0.3;
+                    source.connect(audioAnalyser);
+
+                    if (badge) {
+                        badge.className = "badge badge-success";
+                        badge.innerText = "LISTENING";
+                    }
+
+                    const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+
+                    function monitorAudio() {
+                        if (examSubmitted) return;
+                        audioAnalyser.getByteFrequencyData(dataArray);
+
+                        let sum = 0;
+                        for (let i = 0; i < dataArray.length; i++) {
+                            sum += dataArray[i];
+                        }
+                        let average = sum / dataArray.length; // 0 to 255
+                        let volumePercent = Math.min(100, Math.round((average / 110) * 100));
+
+                        if (meterFill) {
+                            meterFill.style.width = volumePercent + "%";
+                            if (volumePercent >= 65) {
+                                meterFill.className = "audio-meter-fill danger";
+                            } else if (volumePercent >= 35) {
+                                meterFill.className = "audio-meter-fill warning";
+                            } else {
+                                meterFill.className = "audio-meter-fill normal";
+                            }
+                        }
+                        if (percentDisplay) {
+                            percentDisplay.innerText = volumePercent + "%";
+                        }
+
+                        if (volumePercent >= 65) {
+                            handleAudioSpike(volumePercent);
+                        }
+
+                        requestAnimationFrame(monitorAudio);
+                    }
+                    requestAnimationFrame(monitorAudio);
+                } catch (e) {
+                    console.warn("AudioContext setup error:", e);
+                    if (badge) {
+                        badge.className = "badge badge-warning";
+                        badge.innerText = "OFFLINE";
+                    }
+                }
+            })
+            .catch(err => {
+                console.warn("Audio permission denied or unavailable:", err);
+                if (badge) {
+                    badge.className = "badge badge-warning";
+                    badge.innerText = "MUTED / OFFLINE";
+                }
+            });
+    } else {
+        if (badge) {
+            badge.className = "badge badge-warning";
+            badge.innerText = "UNSUPPORTED";
+        }
+    }
+}
+
+function handleAudioSpike(vol) {
+    const now = Date.now();
+    if (now - lastAudioSpikeTime < 4000) {
+        return; // debounce 4 seconds between spike strikes
+    }
+    lastAudioSpikeTime = now;
+    audioSpikesCount++;
+
+    const liveCount = document.getElementById("liveAudioCount");
+    const spikeDisplay = document.getElementById("audioSpikesDisplay");
+    const spikeField = document.getElementById("audioSpikesField");
+    const spikeBadge = document.getElementById("audioSpikeBadge");
+
+    if (liveCount) liveCount.innerText = audioSpikesCount;
+    if (spikeDisplay) spikeDisplay.innerText = audioSpikesCount;
+    if (spikeField) spikeField.value = audioSpikesCount;
+    if (spikeBadge) spikeBadge.className = "badge badge-danger audio-spike-pulse";
+
+    showToast(`⚠️ High ambient noise or sound spike detected (${vol}% volume)!`);
+    recordSecurityStrike(`Excessive ambient audio noise (${vol}%)`);
+    captureSnapshot("AUDIO_SPIKE", `Loud ambient disturbance / speech detected (${vol}%)`);
+    triggerAutoSave();
 }
 
 function captureSnapshot(type, note) {
@@ -391,6 +543,7 @@ function initializeExamSession() {
     }
 
     initWebcam();
+    initAudioMonitor();
     initMarkedQuestionsFromDraft();
     updateProgress();
     startTimer();
@@ -659,7 +812,8 @@ function sendDraftPayload() {
         copyCount: copyCount,
         rightClick: rightClickCount,
         fullscreenExit: fullscreenExitCount,
-        windowBlur: windowBlurCount
+        windowBlur: windowBlurCount,
+        audioSpikes: audioSpikesCount
     };
 
     fetch('/api/v1/exam/draft', {
@@ -765,6 +919,7 @@ function beforeSubmitExam() {
     document.getElementById("rightClickField").value = rightClickCount;
     document.getElementById("fullscreenField").value = fullscreenExitCount;
     document.getElementById("blurField").value = windowBlurCount;
+    document.getElementById("audioSpikesField").value = audioSpikesCount;
     document.getElementById("timeTakenField").value = Math.max(1, 600 - durationSeconds);
 
     const snapshotField = document.getElementById("snapshotPayload");
@@ -775,6 +930,16 @@ function beforeSubmitExam() {
     if (cameraStream) {
         try {
             cameraStream.getTracks().forEach(track => track.stop());
+        } catch (e) {}
+    }
+    if (audioStream) {
+        try {
+            audioStream.getTracks().forEach(track => track.stop());
+        } catch (e) {}
+    }
+    if (audioContext && audioContext.state !== 'closed') {
+        try {
+            audioContext.close();
         } catch (e) {}
     }
 }

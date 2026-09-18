@@ -33,6 +33,7 @@ public class ExamResult {
     private int rightClickCount;
     private int fullscreenExitCount;
     private int windowBlurCount;
+    private int audioSpikeCount;
     private int totalViolations;
 
     // Integrity Analytics
@@ -159,6 +160,14 @@ public class ExamResult {
 
     public void setWindowBlurCount(int windowBlurCount) {
         this.windowBlurCount = windowBlurCount;
+    }
+
+    public int getAudioSpikeCount() {
+        return audioSpikeCount;
+    }
+
+    public void setAudioSpikeCount(int audioSpikeCount) {
+        this.audioSpikeCount = audioSpikeCount;
     }
 
     public int getTotalViolations() {
