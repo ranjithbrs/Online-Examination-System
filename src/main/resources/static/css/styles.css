@@ -656,11 +656,13 @@ body {
         background: white !important;
         color: black !important;
     }
-    .card, .result-hero, .review-item {
+    .card, .result-hero, .review-item, .table, tr {
         background: white !important;
         color: black !important;
         border: 1px solid #ccc !important;
         box-shadow: none !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
     }
     .card-title, h1, h2, h3, h4, strong {
         color: black !important;

@@ -81,28 +81,28 @@
             </span>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
-            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; break-inside: avoid; page-break-inside: avoid;">
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center; break-inside: avoid; page-break-inside: avoid;">
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">Tab Switches</div>
                 <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.tabSwitchCount}">0</div>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center; break-inside: avoid; page-break-inside: avoid;">
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">Copy Attempts</div>
                 <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.copyCount}">0</div>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center; break-inside: avoid; page-break-inside: avoid;">
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">Right Clicks</div>
                 <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.rightClickCount}">0</div>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center; break-inside: avoid; page-break-inside: avoid;">
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">Fullscreen Exits</div>
                 <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem;" th:text="${result.fullscreenExitCount}">0</div>
             </div>
 
-            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center;">
+            <div style="background: rgba(15, 23, 42, 0.5); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); text-align: center; break-inside: avoid; page-break-inside: avoid;">
                 <div style="font-size: 0.85rem; color: var(--text-secondary);">Audio Spikes</div>
                 <div style="font-size: 1.75rem; font-weight: 800; margin-top: 0.25rem; color: var(--color-warning);" th:text="${result.audioSpikeCount}">0</div>
             </div>

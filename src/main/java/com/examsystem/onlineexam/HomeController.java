@@ -147,6 +147,7 @@ public class HomeController {
             @RequestParam(defaultValue = "0") int rightClick,
             @RequestParam(defaultValue = "0") int fullscreenExit,
             @RequestParam(defaultValue = "0") int windowBlur,
+            @RequestParam(defaultValue = "0") int audioSpikes,
             @RequestParam(defaultValue = "0") int timeTakenSeconds,
             @RequestParam Map<String, String> allParams,
             HttpSession session) {
@@ -160,6 +161,13 @@ public class HomeController {
         form.setRightClick(rightClick);
         form.setFullscreenExit(fullscreenExit);
         form.setWindowBlur(windowBlur);
+        form.setAudioSpikes(audioSpikes);
+
+        if (form.getAudioSpikes() == 0 && allParams.containsKey("audioSpikes")) {
+            try {
+                form.setAudioSpikes(Integer.parseInt(allParams.get("audioSpikes")));
+            } catch (Exception ignored) {}
+        }
 
         // Calculate time taken from server session or fallback to request param
         Long examStartTime = (Long) session.getAttribute("examStartTime");
@@ -173,6 +181,11 @@ public class HomeController {
         if ("true".equalsIgnoreCase(allParams.get("disqualified"))) {
             form.setDisqualified(true);
             form.setDisqualificationReason(allParams.getOrDefault("disqualificationReason", "Exceeded security strike threshold"));
+            if (form.getDisqualificationReason() != null 
+                    && form.getDisqualificationReason().toLowerCase().contains("audio") 
+                    && form.getAudioSpikes() == 0) {
+                form.setAudioSpikes(1);
+            }
         }
 
         Map<Long, String> answers = new HashMap<>();
