@@ -1,5 +1,6 @@
 package com.examsystem.onlineexam;
 
+import com.examsystem.onlineexam.dto.AuditDashboardDto;
 import com.examsystem.onlineexam.dto.ExamSubmissionForm;
 import com.examsystem.onlineexam.dto.QuestionReviewDto;
 import com.examsystem.onlineexam.dto.SnapshotItemDto;
@@ -577,6 +578,83 @@ class OnlineexamApplicationTests {
         assertEquals(2, auditSnaps.size());
         assertEquals("SESSION_START", auditSnaps.get(0).getSnapshotType());
         assertEquals("data:image/jpeg;base64,startframe123", auditSnaps.get(0).getImageBase64());
+    }
+
+    @Test
+    void testAuditDashboardMetricsCalculation() {
+        ExamSubmissionForm passForm = new ExamSubmissionForm();
+        passForm.setStudentName("Passed Student");
+        passForm.setStudentEmail("pass@test.com");
+        passForm.setRollNumber("PASS-100");
+        List<Question> questions = examService.getAllQuestions();
+        Map<Long, String> passAnswers = new HashMap<>();
+        for (Question q : questions) {
+            passAnswers.put(q.getId(), q.getCorrectOption());
+        }
+        passForm.setAnswers(passAnswers);
+        examService.evaluateAndSaveExam(passForm);
+
+        ExamSubmissionForm disqForm = new ExamSubmissionForm();
+        disqForm.setStudentName("Disqualified Student");
+        disqForm.setStudentEmail("disq@test.com");
+        disqForm.setRollNumber("DISQ-100");
+        disqForm.setFullscreenExit(3);
+        disqForm.setAnswers(Map.of());
+        examService.evaluateAndSaveExam(disqForm);
+
+        AuditDashboardDto metrics = examService.getAuditDashboardMetrics();
+        assertNotNull(metrics);
+        assertTrue(metrics.getTotalExams() >= 2);
+        assertTrue(metrics.getPassedCount() >= 1);
+        assertTrue(metrics.getDisqualifiedCount() >= 1);
+        assertTrue(metrics.getPassRate() > 0.0);
+        assertTrue(metrics.getAverageScorePercentage() > 0.0);
+        assertTrue(metrics.getAverageTrustScore() >= 0.0);
+    }
+
+    @Test
+    void testExportExamResultsToCsv() {
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("CSV Candidate");
+        form.setStudentEmail("csv@test.com");
+        form.setRollNumber("CSV-999");
+        form.setAnswers(Map.of());
+        examService.evaluateAndSaveExam(form);
+
+        String csv = examService.exportExamResultsToCsv();
+        assertNotNull(csv);
+        assertTrue(csv.startsWith("Result ID,Student Name,Email,Roll Number"));
+        assertTrue(csv.contains("CSV Candidate"));
+        assertTrue(csv.contains("csv@test.com"));
+        assertTrue(csv.contains("CSV-999"));
+    }
+
+    @Test
+    void testAuditDashboardEndpoint() throws Exception {
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("Dashboard Candidate");
+        form.setStudentEmail("dash@test.com");
+        form.setRollNumber("DASH-001");
+        form.setAnswers(Map.of());
+        examService.evaluateAndSaveExam(form);
+
+        mockMvc.perform(get("/history"))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeExists("results"))
+                .andExpect(model().attributeExists("metrics"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Candidate Submissions & Security Audit")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Total Submissions")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Export Audit CSV")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Dashboard Candidate")));
+    }
+
+    @Test
+    void testExportAuditHistoryCsvEndpoint() throws Exception {
+        mockMvc.perform(get("/admin/history/export/csv"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("attachment; filename=\"Exam_Audit_Report_")))
+                .andExpect(content().contentTypeCompatibleWith("text/csv"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Result ID,Student Name,Email,Roll Number")));
     }
 }
 
