@@ -82,7 +82,7 @@ public class ExamService {
     public String exportExamResultsToCsv() {
         List<ExamResult> results = getAllExamResults();
         StringBuilder sb = new StringBuilder();
-        sb.append("Result ID,Student Name,Email,Roll Number,Score,Total Marks,Percentage,Passed,Time Taken (s),Overtime,Tab Switches,Copy Attempts,Right Clicks,Fullscreen Exits,Window Blurs,Total Violations,Disqualified,Disqualification Reason,Trust Score,Integrity Status,Submitted At\n");
+        sb.append("Result ID,Student Name,Email,Roll Number,Score,Total Marks,Percentage,Passed,Time Taken (s),Overtime,Tab Switches,Copy Attempts,Right Clicks,Fullscreen Exits,Window Blurs,Audio Spikes,Total Violations,Disqualified,Disqualification Reason,Trust Score,Integrity Status,Submitted At\n");
 
         for (ExamResult r : results) {
             sb.append(escapeCsv(String.valueOf(r.getId()))).append(",");
@@ -100,6 +100,7 @@ public class ExamService {
             sb.append(r.getRightClickCount()).append(",");
             sb.append(r.getFullscreenExitCount()).append(",");
             sb.append(r.getWindowBlurCount()).append(",");
+            sb.append(r.getAudioSpikeCount()).append(",");
             sb.append(r.getTotalViolations()).append(",");
             sb.append(r.isDisqualified()).append(",");
             sb.append(escapeCsv(r.getDisqualificationReason())).append(",");
@@ -143,15 +144,16 @@ public class ExamService {
         int rightClick = Math.max(0, form.getRightClick());
         int fullscreenExit = Math.max(0, form.getFullscreenExit());
         int windowBlur = Math.max(0, form.getWindowBlur());
+        int audioSpikes = Math.max(0, form.getAudioSpikes());
 
-        int totalViolations = tabSwitch + copyCount + rightClick + fullscreenExit + windowBlur;
+        int totalViolations = tabSwitch + copyCount + rightClick + fullscreenExit + windowBlur + audioSpikes;
 
         // Server-Side Timer & Overtime Validation (10 mins = 600s, 30s grace buffer)
         int allowedSeconds = 600;
         int timeTaken = form.getTimeTakenSeconds();
         boolean isOvertime = timeTaken > (allowedSeconds + 30);
 
-        int riskScore = (tabSwitch * 5) + (copyCount * 8) + (rightClick * 3) + (fullscreenExit * 10) + (windowBlur * 4);
+        int riskScore = (tabSwitch * 5) + (copyCount * 8) + (rightClick * 3) + (fullscreenExit * 10) + (windowBlur * 4) + (audioSpikes * 6);
         if (isOvertime) {
             riskScore += 25; // Overtime penalty
         }
@@ -202,6 +204,7 @@ public class ExamService {
         result.setRightClickCount(rightClick);
         result.setFullscreenExitCount(fullscreenExit);
         result.setWindowBlurCount(windowBlur);
+        result.setAudioSpikeCount(audioSpikes);
         result.setTotalViolations(totalViolations);
 
         result.setTimeTakenSeconds(timeTaken);
@@ -256,6 +259,9 @@ public class ExamService {
         }
         if (form.getWindowBlur() > 0) {
             violationLogRepository.save(new ViolationLog(resultId, "WINDOW_BLUR", "Browser window lost focus " + form.getWindowBlur() + " time(s)", now));
+        }
+        if (form.getAudioSpikes() > 0) {
+            violationLogRepository.save(new ViolationLog(resultId, "AUDIO_SPIKE", "Detected " + form.getAudioSpikes() + " ambient noise or conversation spike(s)", now));
         }
         if (form.getTimeTakenSeconds() > 630) {
             int over = form.getTimeTakenSeconds() - 600;

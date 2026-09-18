@@ -16,16 +16,21 @@ public class ExamDraftDto implements Serializable {
     private int rightClick;
     private int fullscreenExit;
     private int windowBlur;
+    private int audioSpikes;
     private long lastSavedTimestamp;
 
     public ExamDraftDto() {
     }
 
     public ExamDraftDto(Map<Long, String> answers, int tabSwitch, int copyCount, int rightClick, int fullscreenExit, int windowBlur) {
-        this(answers, new ArrayList<>(), tabSwitch, copyCount, rightClick, fullscreenExit, windowBlur);
+        this(answers, new ArrayList<>(), tabSwitch, copyCount, rightClick, fullscreenExit, windowBlur, 0);
     }
 
     public ExamDraftDto(Map<Long, String> answers, List<Long> markedQuestions, int tabSwitch, int copyCount, int rightClick, int fullscreenExit, int windowBlur) {
+        this(answers, markedQuestions, tabSwitch, copyCount, rightClick, fullscreenExit, windowBlur, 0);
+    }
+
+    public ExamDraftDto(Map<Long, String> answers, List<Long> markedQuestions, int tabSwitch, int copyCount, int rightClick, int fullscreenExit, int windowBlur, int audioSpikes) {
         this.answers = answers != null ? answers : new HashMap<>();
         this.markedQuestions = markedQuestions != null ? markedQuestions : new ArrayList<>();
         this.tabSwitch = tabSwitch;
@@ -33,6 +38,7 @@ public class ExamDraftDto implements Serializable {
         this.rightClick = rightClick;
         this.fullscreenExit = fullscreenExit;
         this.windowBlur = windowBlur;
+        this.audioSpikes = audioSpikes;
         this.lastSavedTimestamp = System.currentTimeMillis();
     }
 
@@ -90,6 +96,14 @@ public class ExamDraftDto implements Serializable {
 
     public void setWindowBlur(int windowBlur) {
         this.windowBlur = windowBlur;
+    }
+
+    public int getAudioSpikes() {
+        return audioSpikes;
+    }
+
+    public void setAudioSpikes(int audioSpikes) {
+        this.audioSpikes = audioSpikes;
     }
 
     public long getLastSavedTimestamp() {
