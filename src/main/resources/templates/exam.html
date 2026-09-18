@@ -76,9 +76,21 @@
         <div class="exam-layout">
             <!-- Left Main Content: Questions -->
             <div>
-                <div th:each="q, iterStat : ${questions}" class="question-card" th:id="'qcard-' + ${q.id}">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <span class="badge badge-warning" th:text="${q.category}">Category</span>
+                <div th:each="q, iterStat : ${questions}" 
+                     class="question-card question-step" 
+                     th:classappend="${iterStat.first} ? 'active-step' : ''"
+                     th:id="'qcard-' + ${q.id}"
+                     th:data-qid="${q.id}"
+                     th:data-index="${iterStat.index}">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span class="badge" style="background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); font-weight: 700; font-size: 0.85rem;"
+                                  th:text="'Question ' + ${iterStat.count} + ' of ' + ${#lists.size(questions)}">
+                                Question 1 of 8
+                            </span>
+                            <span class="badge badge-warning" th:text="${q.category}">Category</span>
+                        </div>
                         <span style="font-size: 0.85rem; color: var(--text-secondary);" th:text="${q.marks} + ' Mark(s)'">1 Mark</span>
                     </div>
 
@@ -95,19 +107,44 @@
                         </label>
                     </div>
 
-                    <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                        <button type="button" class="btn btn-secondary review-toggle-btn"
-                                th:id="'markBtn-' + ${q.id}"
-                                th:data-qid="${q.id}"
-                                onclick="toggleMarkForReview(this.getAttribute('data-qid'))"
-                                style="padding: 0.35rem 0.85rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
-                            <span>⭐</span> <span th:id="'markText-' + ${q.id}">Mark for Review</span>
-                        </button>
-                        <button type="button" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;"
-                                th:data-qid="${q.id}"
-                                onclick="clearAnswer(this.getAttribute('data-qid'))">
-                            Clear Selection
-                        </button>
+                    <!-- Navigation Action Bar with Next / Prev / Submit -->
+                    <div style="margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button type="button" class="btn btn-secondary review-toggle-btn"
+                                    th:id="'markBtn-' + ${q.id}"
+                                    th:data-qid="${q.id}"
+                                    onclick="toggleMarkForReview(this.getAttribute('data-qid'))"
+                                    style="padding: 0.45rem 0.9rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                                <span>⭐</span> <span th:id="'markText-' + ${q.id}">Mark for Review</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" style="padding: 0.45rem 0.8rem; font-size: 0.85rem;"
+                                    th:data-qid="${q.id}"
+                                    onclick="clearAnswer(this.getAttribute('data-qid'))">
+                                Clear Selection
+                            </button>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button type="button" class="btn btn-secondary nav-prev-btn"
+                                    th:data-index="${iterStat.index}"
+                                    onclick="goToQuestionByIndex(parseInt(this.getAttribute('data-index')) - 1)"
+                                    style="padding: 0.5rem 1rem; font-size: 0.85rem;"
+                                    th:disabled="${iterStat.first}">
+                                ⬅️ Previous
+                            </button>
+                            <button type="button" class="btn btn-primary nav-next-btn"
+                                    th:if="${!iterStat.last}"
+                                    th:data-index="${iterStat.index}"
+                                    onclick="goToQuestionByIndex(parseInt(this.getAttribute('data-index')) + 1)"
+                                    style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 700;">
+                                Save & Next ➡️
+                            </button>
+                            <button type="button" class="btn btn-success nav-finish-btn"
+                                    th:if="${iterStat.last}"
+                                    onclick="requestExamSubmission()"
+                                    style="padding: 0.5rem 1.25rem; font-size: 0.85rem; font-weight: 700; background: #10b981; border-color: #10b981;">
+                                Review & Submit 🏁
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -207,10 +244,11 @@
                     <div class="palette-grid">
                         <button type="button" th:each="q, iterStat : ${questions}" 
                                 class="palette-btn" 
-                                th:classappend="${draftAnswers != null and draftAnswers.containsKey(q.id)} ? 'answered' : ''"
+                                th:classappend="${(draftAnswers != null and draftAnswers.containsKey(q.id) ? 'answered ' : '') + (iterStat.first ? 'active-current-q' : '')}"
                                 th:id="'pbtn-' + ${q.id}"
                                 th:data-qid="${q.id}"
-                                onclick="scrollToQuestion(this.getAttribute('data-qid'))"
+                                th:data-index="${iterStat.index}"
+                                onclick="goToQuestionByIndex(parseInt(this.getAttribute('data-index')))"
                                 th:text="${iterStat.count}">
                             1
                         </button>
@@ -545,6 +583,7 @@ function initializeExamSession() {
     initWebcam();
     initAudioMonitor();
     initMarkedQuestionsFromDraft();
+    showQuestion(0);
     updateProgress();
     startTimer();
 
@@ -856,10 +895,46 @@ function updateProgress() {
     }
 }
 
+let currentQuestionIndex = 0;
+
+function showQuestion(index) {
+    const cards = document.querySelectorAll(".question-step");
+    if (!cards || cards.length === 0) return;
+
+    if (index < 0) index = 0;
+    if (index >= cards.length) index = cards.length - 1;
+    currentQuestionIndex = index;
+
+    cards.forEach((c, idx) => {
+        if (idx === index) {
+            c.classList.add("active-step");
+        } else {
+            c.classList.remove("active-step");
+        }
+    });
+
+    const pbtns = document.querySelectorAll(".palette-grid .palette-btn");
+    pbtns.forEach((btn, idx) => {
+        if (idx === index) {
+            btn.classList.add("active-current-q");
+        } else {
+            btn.classList.remove("active-current-q");
+        }
+    });
+
+    window.scrollTo({ top: 80, behavior: 'smooth' });
+}
+
+function goToQuestionByIndex(index) {
+    showQuestion(index);
+    triggerAutoSave();
+}
+
 function scrollToQuestion(qId) {
-    const element = document.getElementById(`qcard-${qId}`);
-    if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+    const cards = Array.from(document.querySelectorAll(".question-step"));
+    const targetIndex = cards.findIndex(c => c.getAttribute("data-qid") === String(qId));
+    if (targetIndex !== -1) {
+        showQuestion(targetIndex);
     }
 }
 
