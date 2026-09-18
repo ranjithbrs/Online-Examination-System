@@ -173,4 +173,23 @@ public class ExamSubmissionForm {
     public void setSnapshots(java.util.List<SnapshotItemDto> snapshots) {
         this.snapshots = snapshots != null ? snapshots : new java.util.ArrayList<>();
     }
+
+    private String selectedTopic;
+    private java.util.List<Long> examQuestionIds = new java.util.ArrayList<>();
+
+    public String getSelectedTopic() {
+        return selectedTopic;
+    }
+
+    public void setSelectedTopic(String selectedTopic) {
+        this.selectedTopic = selectedTopic;
+    }
+
+    public java.util.List<Long> getExamQuestionIds() {
+        return examQuestionIds;
+    }
+
+    public void setExamQuestionIds(java.util.List<Long> examQuestionIds) {
+        this.examQuestionIds = examQuestionIds != null ? examQuestionIds : new java.util.ArrayList<>();
+    }
 }

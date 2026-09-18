@@ -51,10 +51,12 @@
 
 <div class="container">
     <form id="examForm" action="/submit" method="post" onsubmit="beforeSubmitExam()">
-        <!-- Candidate Metadata -->
+        <!-- Candidate Metadata & Exam Scope -->
         <input type="hidden" name="studentName" th:value="${studentName}">
         <input type="hidden" name="studentEmail" th:value="${studentEmail}">
         <input type="hidden" name="rollNumber" th:value="${rollNumber}">
+        <input type="hidden" name="selectedTopic" th:value="${selectedTopic}">
+        <input type="hidden" th:each="q : ${questions}" name="examQuestionIds" th:value="${q.id}">
 
         <!-- Hidden Proctoring Counters -->
         <input type="hidden" name="tabSwitch" id="tabSwitchField" value="0">

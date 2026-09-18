@@ -2,7 +2,9 @@ package com.examsystem.onlineexam.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Entity
@@ -54,6 +56,13 @@ public class ExamResult {
     @MapKeyColumn(name = "question_id")
     @Column(name = "selected_option")
     private Map<Long, String> selectedAnswers = new HashMap<>();
+
+    private String selectedTopic;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "exam_result_question_ids", joinColumns = @JoinColumn(name = "exam_result_id"))
+    @Column(name = "question_id")
+    private List<Long> examQuestionIds = new ArrayList<>();
 
     public ExamResult() {
     }
@@ -257,5 +266,21 @@ public class ExamResult {
 
     public void setSelectedAnswers(Map<Long, String> selectedAnswers) {
         this.selectedAnswers = selectedAnswers;
+    }
+
+    public String getSelectedTopic() {
+        return selectedTopic;
+    }
+
+    public void setSelectedTopic(String selectedTopic) {
+        this.selectedTopic = selectedTopic;
+    }
+
+    public List<Long> getExamQuestionIds() {
+        return examQuestionIds;
+    }
+
+    public void setExamQuestionIds(List<Long> examQuestionIds) {
+        this.examQuestionIds = examQuestionIds != null ? examQuestionIds : new ArrayList<>();
     }
 }

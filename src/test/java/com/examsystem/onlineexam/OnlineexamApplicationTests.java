@@ -773,6 +773,39 @@ class OnlineexamApplicationTests {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("audioSpikesField")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Room Noise Level")));
     }
+
+    @Test
+    void testTopicBasedExamEvaluationAndScoring() {
+        List<Question> javaQuestions = examService.getAllQuestions().stream()
+                .filter(q -> "Java Fundamentals".equalsIgnoreCase(q.getCategory()))
+                .toList();
+        assertFalse(javaQuestions.isEmpty());
+
+        ExamSubmissionForm form = new ExamSubmissionForm();
+        form.setStudentName("Java Candidate");
+        form.setStudentEmail("java@test.com");
+        form.setRollNumber("JAVA-101");
+        form.setSelectedTopic("Java Fundamentals");
+        form.setExamQuestionIds(javaQuestions.stream().map(Question::getId).toList());
+
+        // Answer only the first question correctly
+        Map<Long, String> answers = new HashMap<>();
+        answers.put(javaQuestions.get(0).getId(), javaQuestions.get(0).getCorrectOption());
+        form.setAnswers(answers);
+
+        ExamResult result = examService.evaluateAndSaveExam(form);
+
+        assertNotNull(result.getId());
+        assertEquals(javaQuestions.size(), result.getTotalMarks(), "Total marks should match only the topic questions");
+        assertEquals(1, result.getScore(), "Score should be exactly 1");
+        double expectedPercentage = Math.round((1.0 * 100.0 / javaQuestions.size()) * 10.0) / 10.0;
+        assertEquals(expectedPercentage, result.getPercentage());
+        assertEquals("Java Fundamentals", result.getSelectedTopic());
+
+        List<QuestionReviewDto> reviews = examService.getQuestionReviews(result);
+        assertEquals(javaQuestions.size(), reviews.size(), "Reviews should only contain questions from this specific exam");
+        assertEquals("Java Fundamentals", reviews.get(0).getQuestion().getCategory());
+    }
 }
 
 

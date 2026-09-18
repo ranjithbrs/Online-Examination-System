@@ -149,6 +149,8 @@ public class HomeController {
             @RequestParam(required = false, defaultValue = "Anonymous Candidate") String studentName,
             @RequestParam(required = false, defaultValue = "candidate@example.com") String studentEmail,
             @RequestParam(required = false, defaultValue = "REG-0000") String rollNumber,
+            @RequestParam(required = false) String selectedTopic,
+            @RequestParam(name = "examQuestionIds", required = false) List<Long> examQuestionIds,
             @RequestParam(defaultValue = "0") int tabSwitch,
             @RequestParam(defaultValue = "0") int copyCount,
             @RequestParam(defaultValue = "0") int rightClick,
@@ -163,6 +165,25 @@ public class HomeController {
         form.setStudentName(studentName);
         form.setStudentEmail(studentEmail);
         form.setRollNumber(rollNumber);
+
+        if (selectedTopic == null || selectedTopic.isBlank()) {
+            selectedTopic = allParams.get("selectedTopic");
+        }
+        if (selectedTopic == null || selectedTopic.isBlank()) {
+            selectedTopic = (String) session.getAttribute("selectedTopic");
+        }
+        form.setSelectedTopic(selectedTopic != null && !selectedTopic.isBlank() ? selectedTopic : "ALL");
+
+        if (examQuestionIds == null || examQuestionIds.isEmpty()) {
+            @SuppressWarnings("unchecked")
+            List<com.examsystem.onlineexam.dto.QuestionDisplayDto> sessQ = 
+                    (List<com.examsystem.onlineexam.dto.QuestionDisplayDto>) session.getAttribute("sessionQuestions");
+            if (sessQ != null && !sessQ.isEmpty()) {
+                examQuestionIds = sessQ.stream().map(com.examsystem.onlineexam.dto.QuestionDisplayDto::getId).toList();
+            }
+        }
+        form.setExamQuestionIds(examQuestionIds != null ? examQuestionIds : new ArrayList<>());
+
         form.setTabSwitch(tabSwitch);
         form.setCopyCount(copyCount);
         form.setRightClick(rightClick);

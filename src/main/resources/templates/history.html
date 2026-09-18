@@ -126,6 +126,9 @@
                             <td>
                                 <strong class="cand-name" th:text="${r.studentName}" style="color: var(--text-primary);">John Doe</strong><br>
                                 <span class="cand-email" th:text="${r.studentEmail}" style="font-size: 0.85rem; color: var(--text-secondary);">john@example.com</span>
+                                <div th:if="${r.selectedTopic != null and !r.selectedTopic.isBlank()}" style="margin-top: 0.2rem;">
+                                    <span class="badge badge-warning" th:text="${r.selectedTopic}" style="font-size: 0.7rem;">Topic</span>
+                                </div>
                             </td>
                             <td class="cand-roll" th:text="${r.rollNumber}">REG-1001</td>
                             <td>

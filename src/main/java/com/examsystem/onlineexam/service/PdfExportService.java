@@ -93,14 +93,19 @@ public class PdfExportService {
             addTableCell(candTable, "Exam Session ID:", labelFont, BG_LIGHT, true);
             addTableCell(candTable, "SEC-" + result.getId(), valueFont, Color.WHITE, false);
 
-            addTableCell(candTable, "Submission Date:", labelFont, BG_LIGHT, true);
-            addTableCell(candTable, result.getSubmittedAt() != null ? result.getSubmittedAt().format(DATE_FORMAT) : "N/A", valueFont, Color.WHITE, false);
+            addTableCell(candTable, "Exam Subject:", labelFont, BG_LIGHT, true);
+            addTableCell(candTable, result.getSelectedTopic() != null ? result.getSelectedTopic() : "All Topics", valueFont, Color.WHITE, false);
             addTableCell(candTable, "Time Taken:", labelFont, BG_LIGHT, true);
             String timeStr = result.getFormattedTimeTaken() != null ? result.getFormattedTimeTaken() : "N/A";
             if (result.isOvertime()) {
                 timeStr += " (OVERTIME)";
             }
             addTableCell(candTable, timeStr, valueFont, Color.WHITE, false);
+
+            addTableCell(candTable, "Submission Date:", labelFont, BG_LIGHT, true);
+            addTableCell(candTable, result.getSubmittedAt() != null ? result.getSubmittedAt().format(DATE_FORMAT) : "N/A", valueFont, Color.WHITE, false);
+            addTableCell(candTable, "Integrity Status:", labelFont, BG_LIGHT, true);
+            addTableCell(candTable, result.getIntegrityStatus() != null ? result.getIntegrityStatus() : "Normal", valueFont, Color.WHITE, false);
 
             document.add(candTable);
 

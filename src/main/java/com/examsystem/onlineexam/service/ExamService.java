@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 import java.util.Collections;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class ExamService {
@@ -121,7 +123,24 @@ public class ExamService {
 
     @Transactional
     public ExamResult evaluateAndSaveExam(ExamSubmissionForm form) {
-        List<Question> questions = questionRepository.findAll();
+        List<Question> questions;
+        if (form.getExamQuestionIds() != null && !form.getExamQuestionIds().isEmpty()) {
+            Map<Long, Question> qMap = questionRepository.findAllById(form.getExamQuestionIds())
+                    .stream().collect(Collectors.toMap(Question::getId, q -> q));
+            questions = form.getExamQuestionIds().stream()
+                    .map(qMap::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+        } else if (form.getSelectedTopic() != null && !form.getSelectedTopic().isBlank() 
+                && !"ALL".equalsIgnoreCase(form.getSelectedTopic().trim()) 
+                && !"All Topics".equalsIgnoreCase(form.getSelectedTopic().trim())) {
+            questions = questionRepository.findAll().stream()
+                    .filter(q -> q.getCategory() != null && q.getCategory().trim().equalsIgnoreCase(form.getSelectedTopic().trim()))
+                    .toList();
+        } else {
+            questions = questionRepository.findAll();
+        }
+
         int score = 0;
         int totalMarks = 0;
 
@@ -129,7 +148,7 @@ public class ExamService {
 
         for (Question q : questions) {
             totalMarks += q.getMarks();
-            String userAns = submittedAnswers.get(q.getId());
+            String userAns = submittedAnswers != null ? submittedAnswers.get(q.getId()) : null;
             if (userAns != null && userAns.trim().equalsIgnoreCase(q.getCorrectOption().trim())) {
                 score += q.getMarks();
             }
@@ -216,6 +235,8 @@ public class ExamService {
         result.setRiskScore(riskScore);
         result.setTrustScore(trustScore);
         result.setIntegrityStatus(integrityStatus);
+        result.setSelectedTopic(form.getSelectedTopic() != null && !form.getSelectedTopic().isBlank() ? form.getSelectedTopic() : "All Topics");
+        result.setExamQuestionIds(questions.stream().map(Question::getId).toList());
         result.setSubmittedAt(LocalDateTime.now());
         result.setSelectedAnswers(submittedAnswers != null ? new HashMap<>(submittedAnswers) : new HashMap<>());
 
@@ -273,10 +294,38 @@ public class ExamService {
     }
 
     public List<QuestionReviewDto> getQuestionReviews(ExamResult result) {
-        Map<Long, String> answers = (result != null && result.getSelectedAnswers() != null) 
+        if (result == null) {
+            return Collections.emptyList();
+        }
+        Map<Long, String> answers = (result.getSelectedAnswers() != null) 
             ? result.getSelectedAnswers() 
             : new HashMap<>();
-        return getQuestionReviews(answers);
+
+        List<Question> questions;
+        if (result.getExamQuestionIds() != null && !result.getExamQuestionIds().isEmpty()) {
+            Map<Long, Question> qMap = questionRepository.findAllById(result.getExamQuestionIds())
+                    .stream().collect(Collectors.toMap(Question::getId, q -> q));
+            questions = result.getExamQuestionIds().stream()
+                    .map(qMap::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+        } else if (result.getSelectedTopic() != null && !result.getSelectedTopic().isBlank() 
+                && !"ALL".equalsIgnoreCase(result.getSelectedTopic().trim()) 
+                && !"All Topics".equalsIgnoreCase(result.getSelectedTopic().trim())) {
+            questions = questionRepository.findAll().stream()
+                    .filter(q -> q.getCategory() != null && q.getCategory().trim().equalsIgnoreCase(result.getSelectedTopic().trim()))
+                    .toList();
+        } else {
+            questions = getAllQuestions();
+        }
+
+        List<QuestionReviewDto> reviews = new ArrayList<>();
+        for (Question q : questions) {
+            String ans = answers.get(q.getId());
+            boolean isCorrect = ans != null && ans.trim().equalsIgnoreCase(q.getCorrectOption().trim());
+            reviews.add(new QuestionReviewDto(q, ans != null ? ans : "Not Answered", isCorrect));
+        }
+        return reviews;
     }
 
     public List<QuestionReviewDto> getQuestionReviews(Map<Long, String> userAnswers) {
