@@ -1,240 +1,230 @@
-# 🎓 Online Examination & Proctoring System
+# 🎓 SecureExam — Smart Online Examination & Proctoring System
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://online-examination-system-dcoc.onrender.com)
 [![Backend: Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![Framework: Spring Boot 3.5](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Database: JPA / H2 / MySQL](https://img.shields.io/badge/Database-JPA%20%7C%20H2%20%7C%20MySQL-003B57?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![Container: Docker](https://img.shields.io/badge/Container-Docker%20Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](Dockerfile)
-[![Tests: JUnit 5](https://img.shields.io/badge/Tests-JUnit%205%20Passing-brightgreen?style=for-the-badge&logo=junit5&logoColor=white)](src/test/)
+[![Tests: 34 JUnit Tests](https://img.shields.io/badge/Tests-34%20Passing-brightgreen?style=for-the-badge&logo=junit5&logoColor=white)](src/test/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-> A modern, robust, full-featured **Spring Boot web application** designed for conducting secure online examinations with real-time browser proctoring security, dynamic candidate analytics, weighted Trust Index computation, automated grading, teacher question management, and a complete RESTful JSON API.
+> 🌟 **A complete online exam portal that automatically monitors fairness and integrity — just like having an in-person supervisor in the exam hall, but running right inside your web browser!**
 
 ---
 
-## 🔗 Live Application & Portals
+## 🔗 Quick Links & Live Demos
 
-- 🌐 **Live Public Portal:** [online-examination-system-dcoc.onrender.com](https://online-examination-system-dcoc.onrender.com)
-- 📊 **Teacher / Admin Audit Dashboard:** [online-examination-system-dcoc.onrender.com/history](https://online-examination-system-dcoc.onrender.com/history)
+- 🌐 **Student Exam Portal:** [online-examination-system-dcoc.onrender.com](https://online-examination-system-dcoc.onrender.com)
+- 📊 **Teacher & Admin Audit Dashboard:** [online-examination-system-dcoc.onrender.com/history](https://online-examination-system-dcoc.onrender.com/history)
 - 📝 **Question Bank Management:** [online-examination-system-dcoc.onrender.com/admin/questions](https://online-examination-system-dcoc.onrender.com/admin/questions)
 - 🐙 **GitHub Repository:** [github.com/ranjithbrs/Online-Examination-System](https://github.com/ranjithbrs/Online-Examination-System)
 
 ---
 
-## 📑 Table of Contents
-- [Architecture & Proctoring Workflow](#-architecture--proctoring-workflow)
-- [Key Features](#-key-features)
-- [REST API Specifications](#-rest-api-specifications)
-- [Technology Stack](#-technology-stack)
-- [Local Setup & Development](#-local-setup--development)
-- [Cloud Deployment (Render / Docker)](#-cloud-deployment-render--docker)
-- [Automated Testing Suite](#-automated-testing-suite)
-- [Repository Structure](#-repository-structure)
-- [Author & Connect](#-author)
-- [License](#-license)
+## 💡 What is this Project? (In Plain English)
+
+Imagine taking an exam from home on your laptop. Normally, a school or company has to hire teachers to stand in the room and make sure students don't search for answers on Google or talk to someone next to them.
+
+**SecureExam** solves this problem automatically with code. It is an intelligent web application that:
+1. **Presents an interactive test**: Students register, pick their subject, and answer questions one-by-one with an easy-to-use countdown timer.
+2. **Watches for dishonest behavior in real time**:
+   - 🚫 **No Tab Switching**: If a candidate opens a new browser tab or minimizes the exam, the system catches it immediately.
+   - 🚫 **No Copy-Pasting**: Right-clicking, copying questions, and pasting answers are strictly blocked.
+   - 📷 **Webcam Verification**: Automatically takes photos at the start of the exam, during suspicious moments, and when submitting.
+   - 🎙️ **Room Noise Detection**: Listens for loud talking, whispering, or background chatter using the computer microphone.
+3. **Grades Instantly & Generates Reports**: As soon as the student finishes, the system calculates their score, grades their answers, gives helpful explanations, and produces an **official PDF report with verifiable photo evidence**.
 
 ---
 
-## 📐 Architecture & Proctoring Workflow
+## 👥 Who is it Built For?
 
-```mermaid
-flowchart TD
-    subgraph Candidate["👨‍🎓 Candidate Session"]
-        A[Registration: Name, Email, Roll No] --> B[Enter Proctored Exam Environment]
-        B --> C[Interactive 10-Min Countdown Timer]
-        B --> D[Question Palette & Progress Tracker]
-    end
+| User | How SecureExam Helps Them |
+| :--- | :--- |
+| 🎓 **Students** | Take exams in a clean, distraction-free screen with auto-saving so you never lose your answers, plus instant feedback and explanations. |
+| 🏫 **Schools & Colleges** | Conduct semester quizzes, entrance exams, and mock tests without renting physical exam centers or worrying about cheating. |
+| 💼 **Recruiters & Companies** | Screen candidates for job interviews remotely and review automated trust ratings to ensure candidates solved questions on their own. |
 
-    subgraph ProctorEngine["🛡️ Real-Time Proctoring Security Engine"]
-        B -.-> E[Full-Screen Lock Enforcement]
-        B -.-> F[Tab Switch & Window Blur Detection]
-        B -.-> G[Clipboard Lock: Ctrl+C / Ctrl+V / Ctrl+X]
-        B -.-> H[DevTools Prevention: F12 / Context Menu Block]
-        
-        E -->|Violation Triggered| I[Log Violation Event with Timestamp]
-        F -->|Violation Triggered| I
-        G -->|Violation Triggered| I
-        H -->|Violation Triggered| I
-    end
+---
 
-    subgraph Backend["⚙️ Spring Boot Core Engine"]
-        C -->|Manual or Auto Submit| J[POST /api/v1/exams/submit]
-        I --> J
-        J --> K[Automated Grading & Scoring Engine]
-        J --> L[Weighted Trust Index Calculator]
-        K --> M[Spring Data JPA Persistence Layer]
-        L --> M
-    end
+## 🚀 How It Works (Step-by-Step Walkthrough)
 
-    subgraph Report["📊 Result & Audit Generation"]
-        M --> N[(H2 / MySQL Database)]
-        N --> O[Scorecard & Comprehensive Question Review]
-        N --> P[Incident Timeline & Trust Index Rating]
-        N --> Q[Teacher Audit Dashboard: /history]
-    end
+```text
+  [1. Register & Pick Subject]
+               │
+               ▼
+  [2. Enter Full-Screen Mode] ──▶ Webcam & Microphone Activated
+               │
+               ▼
+  [3. Step-by-Step Questions] ──▶ Save & Next ➡️, Mark for Review ⭐, Auto-Save Draft
+               │
+               ▼
+  [4. Active Cheating Guard]  ──▶ Tab Switches, Fullscreen Exits, Copy Attempts & Noise Tracked
+               │
+               ▼
+  [5. Review & Confirm]       ──▶ Summary Modal checks unanswered questions before final submission
+               │
+               ▼
+  [6. Instant Scorecard & PDF]──▶ Final Grade + 100% Trust Score + Official PDF Certificate
 ```
 
----
-
-## 🌟 Key Features
-
-### 👨‍🎓 Candidate Examination Portal
-- **Zero-Friction Registration**: Quick candidate onboarding with Name, Email, and Roll Number validation.
-- **Synchronized Countdown Timer**: 10-minute active exam timer with automatic graceful submission at `00:00`.
-- **Dynamic Question Navigation Grid**: Interactive palette tracking answered, unvisited, and marked questions.
-- **Live Progress Bar**: Visual progress indicator updating dynamically as answers are selected.
-
-### 🔒 Proctoring Security Engine
-- **Full-Screen Locking**: Enforces HTML5 full-screen mode throughout the exam session; warns user on exit.
-- **Tab Switch & Focus Loss Monitoring**: Tracks browser tab switches, OS application changes, and window minimize events.
-- **Clipboard & DevTools Blocking**: Disables `Ctrl+C`, `Ctrl+V`, `Ctrl+X`, right-click context menus, `F12`, and DevTools key combinations (`Ctrl+Shift+I`).
-- **Instant Warning Alerts**: Displays real-time warning toasts upon policy infractions without disrupting exam progress.
-
-### 📊 Academic Performance & Integrity Analytics
-- **Weighted Trust Index Score**: Evaluates academic integrity by applying penalty coefficients to recorded security violations:
-  $$\text{Trust Index} = \max\left(0, 100 - \sum (\text{Severity Weight} \times \text{Incidents})\right)$$
-- **Proctoring Incident Timeline**: Chronological log of infractions with exact timestamps for administrative review.
-- **Detailed Question Review**: Explanations for correct/incorrect answers **persisted to the relational database**, ensuring permanent availability.
-- **🖨️ PDF Export & Print**: One-click printable examination transcript for official records.
-
-### 🏫 Teacher & Administrator Tools
-- **Live Audit Dashboard (`/history`)**: Filter candidate submissions with live search across name, email, or roll number.
-- **Question Bank CRUD (`/admin/questions`)**: Real-time management interface to create, update, or remove exam questions on-the-fly without server restarts.
+1. **Candidate Registration**: The student enters their Name, Email, and Roll Number, then chooses a subject (e.g. *Java Fundamentals*, *Spring Boot*, *Database Systems*, or *All Topics*).
+2. **Locked Full-Screen Exam**: The test launches in full-screen. A 10-minute timer starts ticking down.
+3. **Smooth Question Stepper**: Candidates see one question at a time. They can click **`Save & Next ➡️`**, jump between questions using the visual palette, or mark difficult questions for review. If their internet hiccups, our background **auto-save draft** keeps their work safe!
+4. **Behavioral Integrity Monitor**:
+   - If the student leaves full-screen or switches windows ➡️ Logged with an instant alert!
+   - If loud talking is detected in the room ➡️ Flagged with a noise spike!
+   - Reaching 3 severe security strikes ➡️ Exam automatically locks and terminates!
+5. **Official Verification**: Upon completion, the student receives their score (e.g. 4 / 5 Marks) and can download a beautiful **Official PDF Certificate & Report** complete with security hashes and photo audit frames.
 
 ---
 
-## 📡 REST API Specifications
+## ✨ Key Features Breakdown
 
-The application includes a clean RESTful JSON API for integrations and headless testing:
+### 🎯 1. For Students (Smooth Test Taking Experience)
+- **Subject-Wise Modules**: Pick a targeted subject (Java, Spring, SQL, Web) or take the full comprehensive test.
+- **Easy Question Navigation**: `Save & Next ➡️`, `⬅️ Previous`, and visual question numbers that change colors as you answer.
+- **Mark for Review ⭐**: Bookmark questions you want to double-check before submitting.
+- **Pre-Submission Checklist**: A clear modal shows how many questions you answered, marked, or left blank before you finalize.
+- **15-Second Auto-Save**: Answers are continually backed up in the background to protect against accidental browser refreshes.
 
-| Method | Endpoint | Description | Access |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/questions` | Retrieves all active exam questions | Public |
-| `GET` | `/api/v1/questions/{id}` | Retrieves a single question by ID | Public |
-| `POST` | `/api/v1/exams/submit` | Submits candidate answers & violations payload | Public |
-| `GET` | `/api/v1/results` | Lists all candidate exam results | Public / Teacher |
-| `GET` | `/api/v1/results/{id}` | Fetches detailed result & review for a candidate | Public / Teacher |
-| `GET` | `/health` | Health check probe for uptime monitoring | Public |
+### 🛡️ 2. For Evaluators (Real-Time Proctoring Security)
+- **Full-Screen Enforcement**: Keeps the candidate inside the testing environment. Exiting triggers a security infraction.
+- **Tab Switch & Focus Detection**: Detects whenever the browser window loses focus or another application is opened.
+- **Clipboard & DevTools Blocker**: Prohibits `Ctrl+C`, `Ctrl+V`, `F12` developer tools, and right-click context menus.
+- **📷 Automated Photo Audit**: Captures webcam snapshots at start, on security strikes, and upon submission.
+- **🎙️ Ambient Audio Proctoring**: Measures room noise level in real-time. Detects speech or disruptions above safe levels.
+- **3-Strike Disqualification**: Automatically terminates the exam if a candidate repeatedly violates safety policies.
+
+### 📊 3. For Teachers & Administrators
+- **Teacher Audit Dashboard (`/history`)**: Search and filter past candidate records by name, email, roll number, or pass/fail status.
+- **Trust Index Score**: Calculates an overall honesty rating (e.g. `100% High Integrity` vs `High Risk / Flagged`).
+- **Question Bank Manager (`/admin/questions`)**: Add, edit, or delete questions directly from the browser without touching code.
+- **CSV & PDF Export**: Download bulk candidate results or individual official scorecards with one click.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Technology Stack (Behind the Scenes)
 
-- **Backend Framework**: Java 21, Spring Boot 3.5, Spring Data JPA, Spring MVC, Spring Validation, Thymeleaf
-- **Frontend Architecture**: HTML5, Vanilla JavaScript (ES6+), Custom Glassmorphism CSS Design System
-- **Database Support**: H2 In-Memory (default for instant local development) & MySQL 8.x (production profile)
-- **Containerization**: Multi-stage production Dockerfile (`eclipse-temurin:21-jre-jammy`)
-- **Testing**: JUnit 5, Spring Boot Test, MockMvc (7 automated unit & integration tests)
-- **Hosting**: Render Cloud Platform
+For developers and technical reviewers, here is how the system is engineered under the hood:
+
+| Layer | Technologies Used | What It Does |
+| :--- | :--- | :--- |
+| **Backend** | **Java 21**, **Spring Boot 3.5** | Core server logic, REST endpoints, and security session management |
+| **Data & ORM** | **Spring Data JPA**, **Hibernate**, **H2 / MySQL** | Database storage with instant local in-memory H2 and production MySQL |
+| **Frontend** | **HTML5**, **Vanilla JavaScript**, **Thymeleaf**, **CSS3** | Fast, zero-dependency modern UI with dark glassmorphism styling |
+| **Audio Proctoring** | **Web Audio API** (`AudioContext`, `AnalyserNode`) | Real-time browser microphone frequency & volume analysis |
+| **Photo Proctoring** | **HTML5 MediaDevices** (`getUserMedia`, `<canvas>`) | Client-side snapshot capture with base64 serialization |
+| **PDF Generation** | **OpenPDF / iText** | High-fidelity, multi-page vector PDF report generation with security seals |
+| **Testing** | **JUnit 5**, **Spring Boot Test**, **MockMvc** | 34 automated unit, integration, and security test cases |
+| **Deployment** | **Docker**, **Render Cloud** | Containerized cloud deployment ready for high availability |
 
 ---
 
-## 🚀 Local Setup & Development
+## 🏃 How to Run It on Your Computer (Quick Setup)
 
-### Prerequisites
-- **JDK 21** or higher installed.
-- Maven (or use included `./mvnw` / `mvnw.cmd`).
+You don't need complicated database setups—the app comes with an automatic built-in database that starts instantly!
 
-### 1. Clone the Repository
+### What You Need:
+- **Java 21** or newer installed ([Download free from Oracle or Adoptium](https://adoptium.net/))
+
+### Step 1: Download or Clone the Code
 ```bash
 git clone https://github.com/ranjithbrs/Online-Examination-System.git
 cd Online-Examination-System
 ```
 
-### 2. Run with H2 In-Memory Database (Default)
-```bash
-# Windows
-.\mvnw.cmd spring-boot:run
+### Step 2: Start the Application
 
-# Linux / macOS
-./mvnw spring-boot:run
-```
+- **On Windows:**
+  ```powershell
+  .\mvnw.cmd spring-boot:run
+  ```
 
-### 3. Run with MySQL Profile (Production Mode)
-Configure credentials in `src/main/resources/application-mysql.properties`, then execute:
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=mysql
-```
+- **On Mac or Linux:**
+  ```bash
+  ./mvnw spring-boot:run
+  ```
 
-### 🔗 Local Endpoints
-- **Candidate Portal:** `http://localhost:8080/`
-- **Audit Dashboard:** `http://localhost:8080/history`
-- **Question Bank:** `http://localhost:8080/admin/questions`
-- **H2 Console:** `http://localhost:8080/h2-console` *(JDBC URL: `jdbc:h2:mem:examdb`)*
+### Step 3: Open in Your Browser
+Once you see `Started OnlineexamApplication` in your terminal, open:
+- 👉 **Candidate Exam Portal:** [http://localhost:8080/](http://localhost:8080/)
+- 👉 **Teacher Audit Dashboard:** [http://localhost:8080/history](http://localhost:8080/history)
+- 👉 **Question Bank Manager:** [http://localhost:8080/admin/questions](http://localhost:8080/admin/questions)
 
 ---
 
 ## 🐳 Running with Docker
 
+If you prefer using Docker:
+
 ```bash
-# 1. Build Docker image
-docker build -t online-exam-system .
+# 1. Build the lightweight container
+docker build -t secure-exam-system .
 
-# 2. Run container
-docker run -p 8080:8080 online-exam-system
+# 2. Run on port 8080
+docker run -p 8080:8080 secure-exam-system
 ```
+Then visit `http://localhost:8080` in your browser.
 
 ---
 
-## ☁️ Cloud Deployment (Render / Docker)
+## 🧪 Automated Quality & Test Suite
 
-Pre-configured for automated continuous deployment using `render.yaml` or `Dockerfile`:
-- Automatically binds to dynamic cloud `$PORT`.
-- Configured health check probe at `/health`.
-- Persistent MySQL connection supported via environment variables (`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`).
+The project includes **34 automated test cases** covering every part of the system:
+- Question bank seeding and subject filtering
+- Accurate score calculation (e.g., 5 questions scored strictly out of 5)
+- Proctoring violation counts and strike rules
+- Disqualification triggers
+- Real-time auto-save draft endpoints
+- PDF report generation
+- Teacher audit search and CSV exports
 
----
-
-## 🧪 Automated Testing Suite
-
-Comprehensive unit and integration tests covering context initialization, question seeding, grading logic, proctoring violation tracking, answer persistence, question CRUD, and REST endpoints:
-
+Run the test suite anytime:
 ```bash
 # Windows
 .\mvnw.cmd test
 
-# Linux / macOS
+# Mac / Linux
 ./mvnw test
 ```
 
-Expected output:
+Expected result:
 ```text
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 34, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD SUCCESS
 ```
 
 ---
 
-## 📁 Repository Structure
+## 📁 Project Structure
 
 ```text
 Online-Examination-System/
-├── Dockerfile                          # Multi-stage production container build
-├── render.yaml                         # Cloud PaaS deployment configuration
-├── pom.xml                             # Maven build & dependency definitions
-├── README.md                           # Comprehensive project documentation
-└── src/
-    ├── main/java/com/examsystem/onlineexam/
-    │   ├── OnlineexamApplication.java  # Spring Boot application entrypoint
-    │   ├── HomeController.java         # MVC controller (exam, result, audit views)
-    │   ├── config/DataInitializer.java # Question bank database seeder
-    │   ├── controller/                 # REST API controllers
-    │   ├── dto/                        # Validated Data Transfer Objects
-    │   ├── exception/                  # Global exception & error handler
-    │   ├── model/                      # JPA Entities (ExamResult, Question, ViolationLog)
-    │   ├── repository/                 # Spring Data JPA repositories
-    │   └── service/ExamService.java    # Grading engine & Trust Index logic
-    ├── main/resources/
-    │   ├── application.properties      # H2 default configuration
-    │   ├── application-mysql.properties# Production MySQL configuration
-    │   ├── static/css/styles.css       # Dark mode design tokens
-    │   └── templates/                  # Thymeleaf dynamic views
-    └── test/                           # Automated JUnit 5 test suite
+├── src/
+│   ├── main/
+│   │   ├── java/com/examsystem/onlineexam/
+│   │   │   ├── OnlineexamApplication.java   # Main application starter
+│   │   │   ├── HomeController.java          # Handles web page routes & submissions
+│   │   │   ├── config/                      # Database question seeder (35 sample questions)
+│   │   │   ├── controller/                  # REST API controllers
+│   │   │   ├── dto/                         # Safe data objects for forms & drafts
+│   │   │   ├── model/                       # Database tables (ExamResult, Question, etc.)
+│   │   │   ├── repository/                  # Database communication interfaces
+│   │   │   └── service/                     # Grading, Trust score math, & PDF generator
+│   │   └── resources/
+│   │       ├── application.properties       # App settings & database config
+│   │       ├── static/css/styles.css        # Clean dark-mode stylesheet
+│   │       └── templates/                   # Web pages (exam, result, start, history)
+│   └── test/                                # 34 automated JUnit 5 tests
+├── Dockerfile                               # Multi-stage production container build
+├── render.yaml                              # Cloud deployment configuration
+├── pom.xml                                  # Project dependencies
+└── README.md                                # Project documentation
 ```
 
 ---
 
-## 👨‍💻 Author
+## 👨‍💻 Created By
 
 **Ranjith B**  
 🎓 *B.Tech Computer Science & Business Systems (CSBS)*  
@@ -249,4 +239,4 @@ Online-Examination-System/
 
 ## 📄 License
 
-Distributed under the [MIT License](LICENSE).
+Distributed under the [MIT License](LICENSE). Free for academic, personal, and educational use.
