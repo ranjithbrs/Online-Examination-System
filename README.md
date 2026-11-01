@@ -15,7 +15,7 @@
 ## 🔗 Quick Links & Live Demos
 
 - 🌐 **Student Exam Portal:** [online-examination-system-dcoc.onrender.com](https://online-examination-system-dcoc.onrender.com)
-- 🔒 **Teacher / Admin Portal:** [online-examination-system-dcoc.onrender.com/teacher/login](https://online-examination-system-dcoc.onrender.com/teacher/login) *(User: dmin | Pass: dmin123)*
+- 🔒 **Teacher / Admin Portal:** [online-examination-system-dcoc.onrender.com/teacher/login](https://online-examination-system-dcoc.onrender.com/teacher/login) *(Protected; credentials configured via `TEACHER_USERNAME` & `TEACHER_PASSWORD` environment variables)*
 - 📊 **Audit & Integrity Dashboard:** [online-examination-system-dcoc.onrender.com/history](https://online-examination-system-dcoc.onrender.com/history) *(Protected)*
 - 📝 **Question Bank Management:** [online-examination-system-dcoc.onrender.com/admin/questions](https://online-examination-system-dcoc.onrender.com/admin/questions) *(Protected)*
 - 🏛️ **System Architecture & ER Docs:** [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -48,7 +48,7 @@ The system has undergone a complete high-risk verification audit covering all ke
 | 1 | **Candidate Registration & Login** | ✅ **Passed**: Validates candidate name, university email, and roll number. Session isolation prevents unauthenticated exam starts. |
 | 2 | **Exam Creation & Question Management** | ✅ **Passed**: Complete question CRUD portal with live validation, category filtering, and JSON/CSV bulk import/export. |
 | 3 | **Answer Submission & Result Calculation** | ✅ **Passed**: Topic-scoped grading logic ensures students attending 5 questions are strictly evaluated out of 5 marks (100% accurate). |
-| 4 | **Role Separation (Candidate vs. Teacher)** | ✅ **Passed**: Strict TeacherAuthInterceptor protects /history and /admin/**. Unauthenticated requests redirect to /teacher/login. |
+| 4 | **Role Separation (Candidate vs. Teacher)** | ✅ **Passed**: Strict `TeacherAuthInterceptor` protects `/history` and `/admin/**`. Unauthenticated requests redirect to `/teacher/login`. Requires mandatory `TEACHER_PASSWORD` environment variable (insecure fallbacks rejected at startup). |
 | 5 | **Examination Timing & Submission Rules** | ✅ **Passed**: 10-minute enforced countdown with server-side timestamp validation, 30s grace buffer, and overtime risk penalties. |
 | 6 | **Database Relationships & Security** | ✅ **Passed**: JPA relational schema with @ElementCollection, foreign keys, and indexes (idx_viol_exam_id, idx_snap_exam_id). |
 | 7 | **Unit & Integration Tests** | ✅ **Passed**: 45 automated JUnit 5 / Spring Boot MockMvc tests (including startup failure tests on missing/default credentials) verifying all user paths, scoring, and proctoring strike rules. |
@@ -135,7 +135,7 @@ For developers and technical reviewers, here is how the system is engineered und
 | **Audio Proctoring** | **Web Audio API** (`AudioContext`, `AnalyserNode`) | Real-time browser microphone frequency & volume analysis |
 | **Photo Proctoring** | **HTML5 MediaDevices** (`getUserMedia`, `<canvas>`) | Client-side snapshot capture with base64 serialization |
 | **PDF Generation** | **OpenPDF / iText** | High-fidelity, multi-page vector PDF report generation with security seals |
-| **Testing** | **JUnit 5**, **Spring Boot Test**, **MockMvc** | 34 automated unit, integration, and security test cases |
+| **Testing** | **JUnit 5**, **Spring Boot Test**, **MockMvc** | 45 automated unit, integration, and security test cases |
 | **Deployment** | **Docker**, **Render Cloud** | Containerized cloud deployment ready for high availability |
 
 ---
