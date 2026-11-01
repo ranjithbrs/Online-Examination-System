@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.examsystem.onlineexam.service.ExamService;
 import com.examsystem.onlineexam.service.PdfExportService;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -38,11 +39,18 @@ public class HomeController {
     private final PdfExportService pdfExportService;
     private final ObjectMapper objectMapper;
 
-    @Value("${exam.teacher.username:admin}")
+    @Value("${exam.teacher.username:${TEACHER_USERNAME:admin}}")
     private String teacherUsername;
 
-    @Value("${exam.teacher.password:admin123}")
+    @Value("${exam.teacher.password:${TEACHER_PASSWORD:}}")
     private String teacherPassword;
+
+    @PostConstruct
+    public void validateTeacherCredentials() {
+        if (teacherPassword == null || teacherPassword.trim().isBlank() || "admin123".equalsIgnoreCase(teacherPassword.trim())) {
+            throw new IllegalStateException("FATAL SECURITY CONFIGURATION: TEACHER_PASSWORD environment variable must be configured with a non-default, secure password.");
+        }
+    }
 
     public HomeController(ExamService examService, PdfExportService pdfExportService, ObjectMapper objectMapper) {
         this.examService = examService;

@@ -11,7 +11,7 @@ This document provides complete architectural, database schema, security, role s
 4. [Proctoring Pipeline & Trust Score Engine](#4-proctoring-pipeline--trust-score-engine)
 5. [Candidate Exam Lifecycle & Scoring Logic](#5-candidate-exam-lifecycle--scoring-logic)
 6. [Visual Interface Gallery & Screen Guide](#6-visual-interface-gallery--screen-guide)
-7. [Automated Test Suite Verification Matrix (43/43 Passing)](#7-automated-test-suite-verification-matrix-4343-passing)
+7. [Automated Test Suite Verification Matrix (45/45 Passing)](#7-automated-test-suite-verification-matrix-4343-passing)
 
 ---
 
@@ -91,7 +91,7 @@ sequenceDiagram
     Interceptor->>Session: Check teacherLoggedIn == true?
     alt Not Logged In as Teacher
         Interceptor-->>Browser: Redirect to /teacher/login?unauthorized=true
-        User->>Browser: Submits Teacher Credentials (admin / admin123)
+        User->>Browser: Submits Teacher Credentials (TEACHER_USERNAME / TEACHER_PASSWORD)
         Browser->>Controller: POST /teacher/login
         Controller->>Session: Set teacherLoggedIn=true, userRole='TEACHER'
         Controller-->>Browser: Redirect to /history (Authorized)
@@ -297,14 +297,16 @@ $$\text{Trust Score} = \max(0, 100 - \text{Risk Score})$$
 
 ---
 
-## 7. Automated Test Suite Verification Matrix (43/43 Passing)
+## 7. Automated Test Suite Verification Matrix (45/45 Passing)
 
-All 43 unit, integration, and security tests execute cleanly in under 18 seconds:
+All 45 unit, integration, security, and startup configuration tests execute cleanly in under 18 seconds:
 
 | Category | Test Name | Target Verification | Status |
 | :--- | :--- | :--- | :---: |
 | **Candidate Auth & Registration** | `testCandidateRegistrationValidation` | Verifies validation rules (min 2 chars, valid email) | ✅ PASS |
 | **Candidate Auth & Registration** | `testTopicFilteredExamStartAndSessionIsolation` | Validates session isolation per candidate | ✅ PASS |
+| **Teacher Credential Security** | `testApplicationFailsToStartWithoutTeacherPassword` | Confirms app refuses to boot when TEACHER_PASSWORD is empty | ✅ PASS |
+| **Teacher Credential Security** | `testApplicationFailsToStartWithDefaultAdmin123Password` | Confirms app refuses to boot when set to insecure 'admin123' | ✅ PASS |
 | **Role Separation & RBAC** | `testUnauthorizedAccessToAdminQuestionsRedirectsToLogin` | Interceptor redirects unauthenticated requests | ✅ PASS |
 | **Role Separation & RBAC** | `testUnauthorizedAccessToHistoryRedirectsToLogin` | Interceptor protects candidate history | ✅ PASS |
 | **Role Separation & RBAC** | `testTeacherLoginSuccess` | Validates teacher authentication | ✅ PASS |

@@ -34,7 +34,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "exam.teacher.username=admin",
+        "exam.teacher.password=TestSecretTeacherPassword2026!"
+})
 @AutoConfigureMockMvc
 @Transactional
 class OnlineexamApplicationTests {
@@ -829,7 +832,7 @@ class OnlineexamApplicationTests {
     void testTeacherLoginSuccess() throws Exception {
         mockMvc.perform(post("/teacher/login")
                         .param("username", "admin")
-                        .param("password", "admin123"))
+                        .param("password", "TestSecretTeacherPassword2026!"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/history"));
     }
@@ -963,5 +966,30 @@ class OnlineexamApplicationTests {
         assertEquals("DISQUALIFIED", disqResult.getIntegrityStatus());
         assertEquals(0, disqResult.getTrustScore());
         assertFalse(disqResult.isPassed());
+    }
+    @Test
+    void testApplicationFailsToStartWithoutTeacherPassword() {
+        assertThrows(Exception.class, () -> {
+            new org.springframework.boot.builder.SpringApplicationBuilder(OnlineexamApplication.class)
+                    .properties(
+                            "server.port=0",
+                            "spring.datasource.url=jdbc:h2:mem:failtest_missing;DB_CLOSE_DELAY=-1",
+                            "exam.teacher.password="
+                    )
+                    .run();
+        }, "Application must fail to start when TEACHER_PASSWORD is empty or missing");
+    }
+
+    @Test
+    void testApplicationFailsToStartWithDefaultAdmin123Password() {
+        assertThrows(Exception.class, () -> {
+            new org.springframework.boot.builder.SpringApplicationBuilder(OnlineexamApplication.class)
+                    .properties(
+                            "server.port=0",
+                            "spring.datasource.url=jdbc:h2:mem:failtest_default;DB_CLOSE_DELAY=-1",
+                            "exam.teacher.password=admin123"
+                    )
+                    .run();
+        }, "Application must fail to start when TEACHER_PASSWORD is set to insecure default 'admin123'");
     }
 }

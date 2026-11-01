@@ -47,12 +47,12 @@
         <form action="/teacher/login" method="post">
             <div class="form-group" style="margin-bottom: 1.25rem;">
                 <label class="form-label">Username</label>
-                <input type="text" name="username" class="form-control" placeholder="Enter username (e.g. admin)" required autofocus>
+                <input type="text" name="username" class="form-control" placeholder="Enter administrator username" required autofocus>
             </div>
 
             <div class="form-group" style="margin-bottom: 1.75rem;">
                 <label class="form-label">Password</label>
-                <input type="password" name="password" class="form-control" placeholder="Enter password (e.g. admin123)" required>
+                <input type="password" name="password" class="form-control" placeholder="Enter administrator password" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block" style="padding: 0.85rem; font-size: 1rem; font-weight: 700;">
@@ -60,9 +60,9 @@
             </button>
         </form>
 
-        <div style="margin-top: 1.75rem; padding: 0.85rem 1rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
-            🔑 <strong>Default Credentials:</strong> <code style="color: #60a5fa;">admin</code> / <code style="color: #60a5fa;">admin123</code><br>
-            <span style="font-size: 0.8rem;">Configurable via <code>exam.teacher.username</code> and <code>password</code></span>
+        <div style="margin-top: 1.75rem; padding: 0.85rem 1rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--text-muted); text-align: center;">
+            🔒 <strong>Restricted Access:</strong> Authorized faculty and administrators only.<br>
+            <span style="font-size: 0.78rem;">Credentials managed securely via server environment variables.</span>
         </div>
 
         <div style="margin-top: 1.5rem; text-align: center;">
