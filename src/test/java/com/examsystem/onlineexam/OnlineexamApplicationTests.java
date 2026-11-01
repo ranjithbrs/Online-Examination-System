@@ -968,28 +968,44 @@ class OnlineexamApplicationTests {
         assertFalse(disqResult.isPassed());
     }
     @Test
-    void testApplicationFailsToStartWithoutTeacherPassword() {
-        assertThrows(Exception.class, () -> {
+    void testApplicationFailsToStartWithBlankTeacherPassword() {
+        Exception exception = assertThrows(Exception.class, () -> {
             new org.springframework.boot.builder.SpringApplicationBuilder(OnlineexamApplication.class)
-                    .properties(
-                            "server.port=0",
-                            "spring.datasource.url=jdbc:h2:mem:failtest_missing;DB_CLOSE_DELAY=-1",
-                            "exam.teacher.password="
-                    )
-                    .run();
-        }, "Application must fail to start when TEACHER_PASSWORD is empty or missing");
+                    .run(
+                            "--server.port=0",
+                            "--spring.datasource.url=jdbc:h2:mem:fail_blank;DB_CLOSE_DELAY=-1",
+                            "--exam.teacher.password=   "
+                    );
+        }, "Application must fail to start when TEACHER_PASSWORD is blank or whitespace");
+
+        Throwable rootCause = getRootCause(exception);
+        assertInstanceOf(IllegalStateException.class, rootCause, "Root cause must be IllegalStateException");
+        assertTrue(rootCause.getMessage().contains("FATAL SECURITY CONFIGURATION: TEACHER_PASSWORD"),
+                "Exception message must specifically indicate teacher password security failure");
     }
 
     @Test
     void testApplicationFailsToStartWithDefaultAdmin123Password() {
-        assertThrows(Exception.class, () -> {
+        Exception exception = assertThrows(Exception.class, () -> {
             new org.springframework.boot.builder.SpringApplicationBuilder(OnlineexamApplication.class)
-                    .properties(
-                            "server.port=0",
-                            "spring.datasource.url=jdbc:h2:mem:failtest_default;DB_CLOSE_DELAY=-1",
-                            "exam.teacher.password=admin123"
-                    )
-                    .run();
+                    .run(
+                            "--server.port=0",
+                            "--spring.datasource.url=jdbc:h2:mem:fail_admin123;DB_CLOSE_DELAY=-1",
+                            "--exam.teacher.password=admin123"
+                    );
         }, "Application must fail to start when TEACHER_PASSWORD is set to insecure default 'admin123'");
+
+        Throwable rootCause = getRootCause(exception);
+        assertInstanceOf(IllegalStateException.class, rootCause, "Root cause must be IllegalStateException");
+        assertTrue(rootCause.getMessage().contains("FATAL SECURITY CONFIGURATION: TEACHER_PASSWORD"),
+                "Exception message must specifically indicate teacher password security failure");
+    }
+
+    private Throwable getRootCause(Throwable throwable) {
+        Throwable root = throwable;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        return root;
     }
 }
