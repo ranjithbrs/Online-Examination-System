@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.examsystem.onlineexam.service.ExamService;
 import com.examsystem.onlineexam.service.PdfExportService;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,14 +38,67 @@ public class HomeController {
     private final PdfExportService pdfExportService;
     private final ObjectMapper objectMapper;
 
+    @Value("${exam.teacher.username:admin}")
+    private String teacherUsername;
+
+    @Value("${exam.teacher.password:admin123}")
+    private String teacherPassword;
+
     public HomeController(ExamService examService, PdfExportService pdfExportService, ObjectMapper objectMapper) {
         this.examService = examService;
         this.pdfExportService = pdfExportService;
         this.objectMapper = objectMapper;
     }
 
+    // Teacher / Administrator Authentication Routes
+    @GetMapping("/teacher/login")
+    public String teacherLoginPage(
+            @RequestParam(required = false) String error,
+            @RequestParam(required = false) String unauthorized,
+            @RequestParam(required = false) String logout,
+            Model model,
+            HttpSession session) {
+        if (Boolean.TRUE.equals(session.getAttribute("teacherLoggedIn"))) {
+            return "redirect:/history";
+        }
+        model.addAttribute("hasError", error != null);
+        model.addAttribute("unauthorized", unauthorized != null);
+        model.addAttribute("hasLogout", logout != null);
+        return "teacher-login";
+    }
+
+    @PostMapping("/teacher/login")
+    public String processTeacherLogin(
+            @RequestParam String username,
+            @RequestParam String password,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        String cleanUser = username != null ? username.trim() : "";
+        String cleanPass = password != null ? password.trim() : "";
+
+        if (teacherUsername.equals(cleanUser) && teacherPassword.equals(cleanPass)) {
+            session.setAttribute("teacherLoggedIn", true);
+            session.setAttribute("userRole", "TEACHER");
+            session.setAttribute("teacherUsername", cleanUser);
+            return "redirect:/history";
+        }
+        redirectAttributes.addAttribute("error", "invalid");
+        return "redirect:/teacher/login";
+    }
+
+    @GetMapping("/teacher/logout")
+    public String teacherLogout(HttpSession session) {
+        session.removeAttribute("teacherLoggedIn");
+        session.removeAttribute("userRole");
+        session.removeAttribute("teacherUsername");
+        return "redirect:/teacher/login?logout=true";
+    }
+
     @GetMapping("/")
-    public String startPage(Model model, HttpSession session) {
+    public String startPage(
+            @RequestParam(required = false) String error,
+            Model model,
+            HttpSession session) {
         String studentName = (String) session.getAttribute("studentName");
         String studentEmail = (String) session.getAttribute("studentEmail");
         String rollNumber = (String) session.getAttribute("rollNumber");
@@ -64,6 +118,9 @@ public class HomeController {
         model.addAttribute("topics", topics);
         model.addAttribute("topicCounts", topicCounts);
         model.addAttribute("examDurationMinutes", 10);
+        model.addAttribute("isTeacher", Boolean.TRUE.equals(session.getAttribute("teacherLoggedIn")));
+        model.addAttribute("userRole", session.getAttribute("userRole") != null ? session.getAttribute("userRole") : "GUEST");
+        model.addAttribute("regError", error != null);
 
         return "start";
     }
@@ -80,12 +137,22 @@ public class HomeController {
             @RequestParam String studentEmail,
             @RequestParam String rollNumber,
             @RequestParam(required = false, defaultValue = "ALL") String selectedTopic,
-            HttpSession session) {
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
 
-        session.setAttribute("studentName", studentName);
-        session.setAttribute("studentEmail", studentEmail);
-        session.setAttribute("rollNumber", rollNumber);
+        if (studentName == null || studentName.trim().length() < 2 ||
+            studentEmail == null || !studentEmail.contains("@") ||
+            rollNumber == null || rollNumber.trim().length() < 2) {
+            redirectAttributes.addFlashAttribute("registrationError", "Please provide a valid Name, Email, and Roll Number (minimum 2 characters).");
+            return "redirect:/?error=invalid";
+        }
+
+        session.setAttribute("studentName", studentName.trim());
+        session.setAttribute("studentEmail", studentEmail.trim());
+        session.setAttribute("rollNumber", rollNumber.trim());
         session.setAttribute("selectedTopic", selectedTopic);
+        session.setAttribute("candidateLoggedIn", true);
+        session.setAttribute("userRole", "CANDIDATE");
         session.removeAttribute("sessionQuestions");
         session.removeAttribute("examStartTime");
         session.removeAttribute("examDraft");
@@ -288,11 +355,12 @@ public class HomeController {
     }
 
     @GetMapping("/history")
-    public String historyPage(Model model) {
+    public String historyPage(Model model, HttpSession session) {
         List<ExamResult> results = examService.getAllExamResults();
         com.examsystem.onlineexam.dto.AuditDashboardDto metrics = examService.getAuditDashboardMetrics();
         model.addAttribute("results", results);
         model.addAttribute("metrics", metrics);
+        model.addAttribute("teacherUsername", session.getAttribute("teacherUsername") != null ? session.getAttribute("teacherUsername") : "Teacher Admin");
         return "history";
     }
 
@@ -311,7 +379,7 @@ public class HomeController {
 
     // Teacher Question Management Routes
     @GetMapping("/admin/questions")
-    public String manageQuestions(Model model) {
+    public String manageQuestions(Model model, HttpSession session) {
         List<Question> questions = examService.getAllQuestions();
         int totalQuestions = questions.size();
         int totalMarks = questions.stream().mapToInt(Question::getMarks).sum();
@@ -330,6 +398,7 @@ public class HomeController {
         model.addAttribute("topicCounts", topicCounts);
         model.addAttribute("topics", topics);
         model.addAttribute("newQuestion", new com.examsystem.onlineexam.dto.QuestionFormDto());
+        model.addAttribute("teacherUsername", session.getAttribute("teacherUsername") != null ? session.getAttribute("teacherUsername") : "Teacher Admin");
         return "question-manage";
     }
 
@@ -515,4 +584,4 @@ public class HomeController {
         tokens.add(sb.toString().trim());
         return tokens;
     }
-}
+}

@@ -373,7 +373,7 @@ class OnlineexamApplicationTests {
 
     @Test
     void testAdminQuestionBankMetricsAndTopicAnalytics() throws Exception {
-        mockMvc.perform(get("/admin/questions"))
+        mockMvc.perform(get("/admin/questions").sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("questions"))
                 .andExpect(model().attributeExists("totalQuestions"))
@@ -386,7 +386,7 @@ class OnlineexamApplicationTests {
 
     @Test
     void testExportQuestionsJson() throws Exception {
-        mockMvc.perform(get("/admin/questions/export/json"))
+        mockMvc.perform(get("/admin/questions/export/json").sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Question_Bank_Export.json\""))
@@ -398,7 +398,7 @@ class OnlineexamApplicationTests {
 
     @Test
     void testExportQuestionsCsv() throws Exception {
-        mockMvc.perform(get("/admin/questions/export/csv"))
+        mockMvc.perform(get("/admin/questions/export/csv").sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"Question_Bank_Export.csv\""))
                 .andExpect(resultMatcher -> {
@@ -430,7 +430,7 @@ class OnlineexamApplicationTests {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "questions.json", "application/json", jsonPayload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-        mockMvc.perform(multipart("/admin/questions/import").file(file))
+        mockMvc.perform(multipart("/admin/questions/import").file(file).sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/questions"))
                 .andExpect(flash().attributeExists("successMessage"));
@@ -447,7 +447,7 @@ class OnlineexamApplicationTests {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "questions.csv", "text/csv", csvPayload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-        mockMvc.perform(multipart("/admin/questions/import").file(file))
+        mockMvc.perform(multipart("/admin/questions/import").file(file).sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/questions"))
                 .andExpect(flash().attributeExists("successMessage"));
@@ -460,7 +460,7 @@ class OnlineexamApplicationTests {
         MockMultipartFile file = new MockMultipartFile(
                 "file", "invalid.txt", "text/plain", "Random text".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-        mockMvc.perform(multipart("/admin/questions/import").file(file))
+        mockMvc.perform(multipart("/admin/questions/import").file(file).sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/questions"))
                 .andExpect(flash().attributeExists("errorMessage"));
@@ -639,7 +639,7 @@ class OnlineexamApplicationTests {
         form.setAnswers(Map.of());
         examService.evaluateAndSaveExam(form);
 
-        mockMvc.perform(get("/history"))
+        mockMvc.perform(get("/history").sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().isOk())
                 .andExpect(model().attributeExists("results"))
                 .andExpect(model().attributeExists("metrics"))
@@ -651,7 +651,7 @@ class OnlineexamApplicationTests {
 
     @Test
     void testExportAuditHistoryCsvEndpoint() throws Exception {
-        mockMvc.perform(get("/admin/history/export/csv"))
+        mockMvc.perform(get("/admin/history/export/csv").sessionAttr("teacherLoggedIn", true))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("attachment; filename=\"Exam_Audit_Report_")))
                 .andExpect(content().contentTypeCompatibleWith("text/csv"))
@@ -806,10 +806,162 @@ class OnlineexamApplicationTests {
         assertEquals(javaQuestions.size(), reviews.size(), "Reviews should only contain questions from this specific exam");
         assertEquals("Java Fundamentals", reviews.get(0).getQuestion().getCategory());
     }
+
+    // ==========================================
+    // Role Separation & Candidate/Teacher Authentication Tests
+    // ==========================================
+
+    @Test
+    void testUnauthorizedAccessToAdminQuestionsRedirectsToLogin() throws Exception {
+        mockMvc.perform(get("/admin/questions"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/teacher/login?unauthorized=true"));
+    }
+
+    @Test
+    void testUnauthorizedAccessToHistoryRedirectsToLogin() throws Exception {
+        mockMvc.perform(get("/history"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/teacher/login?unauthorized=true"));
+    }
+
+    @Test
+    void testTeacherLoginSuccess() throws Exception {
+        mockMvc.perform(post("/teacher/login")
+                        .param("username", "admin")
+                        .param("password", "admin123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/history"));
+    }
+
+    @Test
+    void testTeacherLoginFailure() throws Exception {
+        mockMvc.perform(post("/teacher/login")
+                        .param("username", "admin")
+                        .param("password", "wrongpass"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/teacher/login?error=invalid"));
+    }
+
+    @Test
+    void testTeacherLogout() throws Exception {
+        mockMvc.perform(get("/teacher/logout")
+                        .sessionAttr("teacherLoggedIn", true))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/teacher/login?logout=true"));
+    }
+
+    @Test
+    void testCandidateRegistrationValidation() throws Exception {
+        // Valid registration
+        mockMvc.perform(post("/start-exam")
+                        .param("studentName", "John Candidate")
+                        .param("studentEmail", "john@example.com")
+                        .param("rollNumber", "REG-999")
+                        .param("selectedTopic", "ALL"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/exam"));
+
+        // Invalid registration - blank name
+        mockMvc.perform(post("/start-exam")
+                        .param("studentName", "")
+                        .param("studentEmail", "john@example.com")
+                        .param("rollNumber", "REG-999"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/?error=invalid"));
+
+        // Invalid registration - malformed email
+        mockMvc.perform(post("/start-exam")
+                        .param("studentName", "John Candidate")
+                        .param("studentEmail", "not-an-email")
+                        .param("rollNumber", "REG-999"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/?error=invalid"));
+    }
+
+    @Test
+    void testQuestionCrudLifecycleByTeacher() throws Exception {
+        com.examsystem.onlineexam.dto.QuestionFormDto newQ = new com.examsystem.onlineexam.dto.QuestionFormDto();
+        newQ.setQuestionText("What is Polymorphism in Java?");
+        newQ.setOptionA("Ability of an object to take on many forms");
+        newQ.setOptionB("Running out of memory");
+        newQ.setOptionC("Compiling C code");
+        newQ.setOptionD("Encrypting strings");
+        newQ.setCorrectOption("A");
+        newQ.setCategory("Java Fundamentals");
+        newQ.setMarks(2);
+        newQ.setExplanation("Polymorphism allows one interface to be used for a general class of actions.");
+
+        int beforeCount = examService.getAllQuestions().size();
+
+        // Save new question as teacher
+        mockMvc.perform(post("/admin/questions/save")
+                        .sessionAttr("teacherLoggedIn", true)
+                        .param("questionText", newQ.getQuestionText())
+                        .param("optionA", newQ.getOptionA())
+                        .param("optionB", newQ.getOptionB())
+                        .param("optionC", newQ.getOptionC())
+                        .param("optionD", newQ.getOptionD())
+                        .param("correctOption", newQ.getCorrectOption())
+                        .param("category", newQ.getCategory())
+                        .param("marks", String.valueOf(newQ.getMarks()))
+                        .param("explanation", newQ.getExplanation()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/questions"));
+
+        List<Question> afterSave = examService.getAllQuestions();
+        assertEquals(beforeCount + 1, afterSave.size());
+
+        Question saved = afterSave.stream()
+                .filter(q -> "What is Polymorphism in Java?".equals(q.getQuestionText()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(saved);
+        assertEquals(2, saved.getMarks());
+
+        // Delete question as teacher
+        mockMvc.perform(get("/admin/questions/delete/" + saved.getId())
+                        .sessionAttr("teacherLoggedIn", true))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/questions"));
+
+        assertEquals(beforeCount, examService.getAllQuestions().size());
+    }
+
+    @Test
+    void testExamTimingOvertimePenaltyAndViolations() {
+        ExamSubmissionForm overtimeForm = new ExamSubmissionForm();
+        overtimeForm.setStudentName("Late Candidate");
+        overtimeForm.setStudentEmail("late@test.com");
+        overtimeForm.setRollNumber("LATE-001");
+        overtimeForm.setTimeTakenSeconds(700); // Exceeds 600s + 30s grace buffer
+        overtimeForm.setTabSwitch(1);
+        overtimeForm.setCopyCount(1);
+        overtimeForm.setAnswers(Map.of());
+
+        ExamResult result = examService.evaluateAndSaveExam(overtimeForm);
+
+        assertTrue(result.isOvertime(), "Exam taking > 630s must be marked overtime");
+        assertTrue(result.getRiskScore() >= 25, "Overtime must incur risk score penalty");
+
+        List<ViolationLog> logs = examService.getViolationLogs(result.getId());
+        boolean hasOvertimeLog = logs.stream().anyMatch(l -> "OVERTIME_SUBMISSION".equals(l.getViolationType()));
+        assertTrue(hasOvertimeLog, "Overtime submission must be recorded in violation logs");
+    }
+
+    @Test
+    void testAutomaticDisqualificationStrikeThresholds() {
+        ExamSubmissionForm strikeForm = new ExamSubmissionForm();
+        strikeForm.setStudentName("Cheating Candidate");
+        strikeForm.setStudentEmail("cheat@test.com");
+        strikeForm.setRollNumber("CHEAT-01");
+        strikeForm.setFullscreenExit(3);
+        strikeForm.setAnswers(Map.of());
+
+        ExamResult disqResult = examService.evaluateAndSaveExam(strikeForm);
+        assertTrue(disqResult.isDisqualified(), "3 fullscreen exits must trigger disqualification");
+        assertEquals("DISQUALIFIED", disqResult.getIntegrityStatus());
+        assertEquals(0, disqResult.getTrustScore());
+        assertFalse(disqResult.isPassed());
+    }
 }
-
-
-
-
-
-

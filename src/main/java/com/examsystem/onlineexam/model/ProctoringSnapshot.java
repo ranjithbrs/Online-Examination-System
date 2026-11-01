@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "proctoring_snapshots")
+@Table(name = "proctoring_snapshots", indexes = {@Index(name = "idx_snap_exam_id", columnList = "examResultId")})
 public class ProctoringSnapshot {
 
     @Id
@@ -83,3 +83,4 @@ public class ProctoringSnapshot {
         this.capturedAt = capturedAt;
     }
 }
+

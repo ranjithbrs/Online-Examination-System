@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher & Administrator Sign In - SecureExam</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="brand">
+        <div class="brand-icon">E</div>
+        <span>SecureExam Portal</span>
+    </a>
+    <div class="nav-links">
+        <a href="/" class="nav-link">Candidate Portal</a>
+        <a href="/teacher/login" class="nav-link active">Teacher Login 🔒</a>
+    </div>
+</nav>
+
+<div class="container" style="max-width: 520px; margin-top: 3rem;">
+    <!-- Alert Messages -->
+    <div th:if="${unauthorized}" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--color-danger); border-radius: var(--radius-sm); color: #f87171; font-size: 0.95rem;">
+        🔒 <strong>Access Restricted:</strong> Teacher authentication is required to access Question Bank Management and the Audit Dashboard.
+    </div>
+
+    <div th:if="${hasError}" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--color-danger); border-radius: var(--radius-sm); color: #f87171; font-size: 0.95rem;">
+        ⚠ <strong>Authentication Failed:</strong> Invalid username or password. Please verify credentials and try again.
+    </div>
+
+    <div th:if="${hasLogout}" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--color-success); border-radius: var(--radius-sm); color: #34d399; font-size: 0.95rem;">
+        ✓ <strong>Logged Out:</strong> You have been safely logged out of the Teacher Portal.
+    </div>
+
+    <div class="card" style="padding: 2.25rem;">
+        <div style="text-align: center; margin-bottom: 1.75rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">👨‍🏫</div>
+            <h2 style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.35rem;">
+                Teacher & Admin Portal
+            </h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                Secure role-based access for curriculum controllers and academic evaluators.
+            </p>
+        </div>
+
+        <form action="/teacher/login" method="post">
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Enter username (e.g. admin)" required autofocus>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.75rem;">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Enter password (e.g. admin123)" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="padding: 0.85rem; font-size: 1rem; font-weight: 700;">
+                Sign In to Teacher Portal &rarr;
+            </button>
+        </form>
+
+        <div style="margin-top: 1.75rem; padding: 0.85rem 1rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+            🔑 <strong>Default Credentials:</strong> <code style="color: #60a5fa;">admin</code> / <code style="color: #60a5fa;">admin123</code><br>
+            <span style="font-size: 0.8rem;">Configurable via <code>exam.teacher.username</code> and <code>password</code></span>
+        </div>
+
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <a href="/" style="color: var(--text-secondary); font-size: 0.85rem; text-decoration: none;">
+                &larr; Return to Candidate Examination Portal
+            </a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -15,8 +15,10 @@
     </a>
     <div class="nav-links">
         <a href="/" class="nav-link">New Exam</a>
-        <a href="/history" class="nav-link">Audit Dashboard</a>
-        <a href="/admin/questions" class="nav-link">Question Bank</a>
+        <a th:if="${isTeacher}" href="/history" class="nav-link">Audit Dashboard</a>
+        <a th:if="${isTeacher}" href="/admin/questions" class="nav-link">Question Bank</a>
+        <a th:if="${isTeacher}" href="/teacher/logout" class="nav-link" style="color: #f87171;">Logout 🚪</a>
+        <a th:unless="${isTeacher}" href="/teacher/login" class="nav-link" style="color: #60a5fa;">Teacher Sign In 🔒</a>
     </div>
 </nav>
 
@@ -202,7 +204,7 @@
             📥 Download Official PDF Report
         </a>
         <button onclick="window.print()" class="btn btn-secondary">🖨️ Print View</button>
-        <a href="/history" class="btn btn-secondary">View All Exam History</a>
+        <a th:if="${isTeacher}" href="/history" class="btn btn-secondary">View All Exam History</a>
     </div>
 </div>
 

@@ -14,9 +14,11 @@
         <span>SecureExam Portal</span>
     </a>
     <div class="nav-links">
-        <a href="/" class="nav-link">Home</a>
-        <a href="/history" class="nav-link">Audit Dashboard</a>
-        <a href="/admin/questions" class="nav-link">Question Bank</a>
+        <a href="/" class="nav-link active">Candidate Registration</a>
+        <a th:if="${isTeacher}" href="/history" class="nav-link">Audit Dashboard</a>
+        <a th:if="${isTeacher}" href="/admin/questions" class="nav-link">Question Bank</a>
+        <a th:if="${isTeacher}" href="/teacher/logout" class="nav-link" style="color: #f87171;">Logout (Admin) 🚪</a>
+        <a th:unless="${isTeacher}" href="/teacher/login" class="nav-link" style="color: #60a5fa;">Teacher Sign In 🔒</a>
     </div>
 </nav>
 
@@ -24,6 +26,14 @@
     <div class="hero">
         <h1>Proctored Online Examination Portal</h1>
         <p>A secure, AI-assisted examination system equipped with real-time proctoring, risk evaluation, and academic performance analytics.</p>
+    </div>
+
+    <!-- Registration Validation Alert -->
+    <div th:if="${registrationError}" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: rgba(239, 68, 68, 0.18); border: 1px solid var(--color-danger); border-radius: var(--radius-sm); color: #f87171; font-weight: 600;">
+        ⚠ <span th:text="${registrationError}">Please fill in all candidate fields.</span>
+    </div>
+    <div th:if="${regError and registrationError == null}" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem; background: rgba(239, 68, 68, 0.18); border: 1px solid var(--color-danger); border-radius: var(--radius-sm); color: #f87171; font-weight: 600;">
+        ⚠ Please provide valid candidate registration details (Name, Email, Roll Number) before beginning the examination.
     </div>
 
     <div class="grid-2">
